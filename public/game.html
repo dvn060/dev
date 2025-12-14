@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Math Game - Math Adventure</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="stars"></div>
+
+  <div class="game-container">
+    <!-- Game Settings Screen -->
+    <div id="settings-screen" class="game-settings">
+      <h2>⚙️ Game Settings</h2>
+      <div class="settings-grid">
+        <div class="form-group">
+          <label>Time Limit</label>
+          <select id="time-limit">
+            <option value="30">30 seconds</option>
+            <option value="60" selected>60 seconds</option>
+            <option value="90">90 seconds</option>
+            <option value="120">2 minutes</option>
+            <option value="180">3 minutes</option>
+            <option value="300">5 minutes</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Difficulty</label>
+          <select id="difficulty">
+            <option value="easy">Easy (1-10)</option>
+            <option value="medium" selected>Medium (1-20)</option>
+            <option value="hard">Hard (1-50)</option>
+            <option value="expert">Expert (1-100)</option>
+          </select>
+        </div>
+
+        <button class="btn btn-primary" onclick="startGame()">Start Game! 🚀</button>
+        <button class="btn btn-secondary" onclick="goToDashboard()">Back to Dashboard</button>
+      </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" style="display: none;">
+      <div class="game-header">
+        <div class="timer">
+          ⏱️ <span id="timer">60</span>s
+        </div>
+        <div class="score-display">
+          🌟 Score: <span id="score">0</span>
+        </div>
+      </div>
+
+      <div class="game-area">
+        <div class="question" id="question">5 + 3 = ?</div>
+        <input
+          type="number"
+          id="answer-input"
+          class="answer-input"
+          placeholder="?"
+          autofocus
+        />
+        <div class="feedback" id="feedback"></div>
+      </div>
+
+      <div style="text-align: center; margin-top: 20px;">
+        <button class="btn btn-danger" onclick="quitGame()">Quit Game</button>
+      </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="results-screen" style="display: none;">
+      <div class="results-screen">
+        <h2>🎉 Game Complete! 🎉</h2>
+
+        <div class="final-score">
+          <span id="final-score">0</span> points
+        </div>
+
+        <div class="results-stats">
+          <div class="result-stat">
+            <div class="result-stat-value" id="result-correct">0</div>
+            <div class="result-stat-label">Correct</div>
+          </div>
+          <div class="result-stat">
+            <div class="result-stat-value" id="result-wrong">0</div>
+            <div class="result-stat-label">Wrong</div>
+          </div>
+          <div class="result-stat">
+            <div class="result-stat-value" id="result-accuracy">0%</div>
+            <div class="result-stat-label">Accuracy</div>
+          </div>
+        </div>
+
+        <div id="new-badges-container" style="display: none;">
+          <div class="new-badges">
+            <h3>🎊 New Badges Earned! 🎊</h3>
+            <div class="new-badge-list" id="new-badges-list"></div>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn btn-primary" onclick="playAgain()">Play Again! 🔄</button>
+          <button class="btn btn-secondary" onclick="goToDashboard()">Dashboard 📊</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

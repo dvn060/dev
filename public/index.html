@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Math Adventure - Fun Learning!</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="landing-page">
+  <div class="stars"></div>
+  <div class="container">
+    <div class="welcome-header">
+      <h1 class="rainbow-text">🎮 Math Adventure! 🎮</h1>
+      <p class="subtitle">Learn math while having fun!</p>
+    </div>
+
+    <!-- Login/Register Toggle -->
+    <div class="auth-container">
+      <div class="tab-buttons">
+        <button class="tab-btn active" onclick="showTab('login')">Login</button>
+        <button class="tab-btn" onclick="showTab('register')">Sign Up</button>
+      </div>
+
+      <!-- Login Form -->
+      <div id="login-tab" class="tab-content active">
+        <form id="login-form" class="auth-form">
+          <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="login-username" required>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="login-password" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Let's Play!</button>
+        </form>
+      </div>
+
+      <!-- Register Form -->
+      <div id="register-tab" class="tab-content">
+        <form id="register-form" class="auth-form">
+          <div class="form-group">
+            <label>I am a:</label>
+            <div class="user-type-selector">
+              <label class="radio-card">
+                <input type="radio" name="user-type" value="child" checked>
+                <span class="radio-label">Kid 👧👦</span>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="user-type" value="parent">
+                <span class="radio-label">Parent 👨👩</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Your Name</label>
+            <input type="text" id="register-name" required>
+          </div>
+
+          <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="register-username" required>
+          </div>
+
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="register-password" required>
+          </div>
+
+          <div class="form-group" id="email-group" style="display: none;">
+            <label>Email (for daily reports)</label>
+            <input type="email" id="register-email">
+          </div>
+
+          <div class="form-group" id="avatar-group">
+            <label>Choose Your Avatar</label>
+            <div class="avatar-selector">
+              <label class="avatar-option">
+                <input type="radio" name="avatar" value="🦁" checked>
+                <span class="avatar">🦁</span>
+              </label>
+              <label class="avatar-option">
+                <input type="radio" name="avatar" value="🐼">
+                <span class="avatar">🐼</span>
+              </label>
+              <label class="avatar-option">
+                <input type="radio" name="avatar" value="🦄">
+                <span class="avatar">🦄</span>
+              </label>
+              <label class="avatar-option">
+                <input type="radio" name="avatar" value="🐸">
+                <span class="avatar">🐸</span>
+              </label>
+              <label class="avatar-option">
+                <input type="radio" name="avatar" value="🦊">
+                <span class="avatar">🦊</span>
+              </label>
+              <label class="avatar-option">
+                <input type="radio" name="avatar" value="🐨">
+                <span class="avatar">🐨</span>
+              </label>
+              <label class="avatar-option">
+                <input type="radio" name="avatar" value="🦋">
+                <span class="avatar">🦋</span>
+              </label>
+              <label class="avatar-option">
+                <input type="radio" name="avatar" value="🐙">
+                <span class="avatar">🐙</span>
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Create Account!</button>
+        </form>
+      </div>
+
+      <div id="message" class="message"></div>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parent Dashboard - Math Adventure</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dashboard">
+  <div class="stars"></div>
+
+  <div class="navbar">
+    <div class="user-info">
+      <div class="user-avatar">👨‍👩‍👧‍👦</div>
+      <div class="user-details">
+        <h2 id="parent-name">Parent Dashboard</h2>
+        <p>Tracking Your Children's Progress</p>
+      </div>
+    </div>
+    <button class="btn btn-danger" onclick="logout()">Logout</button>
+  </div>
+
+  <div style="margin-bottom: 30px;">
+    <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+      <h2 style="color: #333; margin-bottom: 20px;">👶 Add a Child Account</h2>
+      <form id="add-child-form" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: end;">
+        <div class="form-group">
+          <label>Child's Name</label>
+          <input type="text" id="child-name" required>
+        </div>
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="child-username" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="child-password" required>
+        </div>
+        <button type="submit" class="btn btn-success">Add Child</button>
+      </form>
+      <div style="margin-top: 15px;">
+        <label style="font-weight: bold; color: #333; margin-bottom: 10px; display: block;">Choose Avatar:</label>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <label class="avatar-option" style="display: inline-block;">
+            <input type="radio" name="child-avatar" value="🦁" checked>
+            <span class="avatar" style="display: inline-block; font-size: 2em; padding: 10px; background: #f0f0f0; border: 2px solid #ddd; border-radius: 10px; cursor: pointer;">🦁</span>
+          </label>
+          <label class="avatar-option" style="display: inline-block;">
+            <input type="radio" name="child-avatar" value="🐼">
+            <span class="avatar" style="display: inline-block; font-size: 2em; padding: 10px; background: #f0f0f0; border: 2px solid #ddd; border-radius: 10px; cursor: pointer;">🐼</span>
+          </label>
+          <label class="avatar-option" style="display: inline-block;">
+            <input type="radio" name="child-avatar" value="🦄">
+            <span class="avatar" style="display: inline-block; font-size: 2em; padding: 10px; background: #f0f0f0; border: 2px solid #ddd; border-radius: 10px; cursor: pointer;">🦄</span>
+          </label>
+          <label class="avatar-option" style="display: inline-block;">
+            <input type="radio" name="child-avatar" value="🐸">
+            <span class="avatar" style="display: inline-block; font-size: 2em; padding: 10px; background: #f0f0f0; border: 2px solid #ddd; border-radius: 10px; cursor: pointer;">🐸</span>
+          </label>
+          <label class="avatar-option" style="display: inline-block;">
+            <input type="radio" name="child-avatar" value="🦊">
+            <span class="avatar" style="display: inline-block; font-size: 2em; padding: 10px; background: #f0f0f0; border: 2px solid #ddd; border-radius: 10px; cursor: pointer;">🦊</span>
+          </label>
+          <label class="avatar-option" style="display: inline-block;">
+            <input type="radio" name="child-avatar" value="🐨">
+            <span class="avatar" style="display: inline-block; font-size: 2em; padding: 10px; background: #f0f0f0; border: 2px solid #ddd; border-radius: 10px; cursor: pointer;">🐨</span>
+          </label>
+          <label class="avatar-option" style="display: inline-block;">
+            <input type="radio" name="child-avatar" value="🦋">
+            <span class="avatar" style="display: inline-block; font-size: 2em; padding: 10px; background: #f0f0f0; border: 2px solid #ddd; border-radius: 10px; cursor: pointer;">🦋</span>
+          </label>
+          <label class="avatar-option" style="display: inline-block;">
+            <input type="radio" name="child-avatar" value="🐙">
+            <span class="avatar" style="display: inline-block; font-size: 2em; padding: 10px; background: #f0f0f0; border: 2px solid #ddd; border-radius: 10px; cursor: pointer;">🐙</span>
+          </label>
+        </div>
+      </div>
+      <div id="add-child-message" class="message"></div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 30px;">
+    <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+      <h2 style="color: #333; margin-bottom: 20px;">📧 Email Settings</h2>
+      <p style="color: #666; margin-bottom: 20px;">Configure email settings to receive daily progress reports at 8 PM.</p>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+        <div class="form-group">
+          <label>SMTP Host</label>
+          <input type="text" id="smtp-host" placeholder="smtp.gmail.com" value="smtp.gmail.com">
+        </div>
+        <div class="form-group">
+          <label>SMTP Port</label>
+          <input type="number" id="smtp-port" placeholder="587" value="587">
+        </div>
+        <div class="form-group">
+          <label>Email Username</label>
+          <input type="text" id="smtp-user" placeholder="your-email@gmail.com">
+        </div>
+        <div class="form-group">
+          <label>Email Password</label>
+          <input type="password" id="smtp-pass" placeholder="your-app-password">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 15px;">
+        <button class="btn btn-primary" onclick="configureEmail()">Save Email Settings</button>
+        <button class="btn btn-secondary" onclick="testEmail()">Send Test Email</button>
+      </div>
+
+      <div id="email-message" class="message"></div>
+
+      <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 10px; border: 2px solid #ffc107;">
+        <strong>📝 Note:</strong> For Gmail, you need to use an "App Password" instead of your regular password.
+        <a href="https://support.google.com/accounts/answer/185833" target="_blank" style="color: #667eea;">Learn how to create an App Password</a>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <h2 style="color: white; margin-bottom: 20px; text-align: center; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+      Your Children's Progress
+    </h2>
+    <div class="children-grid" id="children-grid">
+      <div class="loading" style="margin: 20px auto;"></div>
+    </div>
+  </div>
+
+  <!-- Child Detail Modal -->
+  <div id="child-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; padding: 20px; overflow-y: auto;">
+    <div style="max-width: 1000px; margin: 50px auto; background: white; border-radius: 20px; padding: 30px; position: relative;">
+      <button onclick="closeChildModal()" style="position: absolute; top: 20px; right: 20px; background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold;">Close</button>
+
+      <div id="child-detail-content">
+        <!-- Will be populated by JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <script src="parent.js"></script>
+</body>
+</html>

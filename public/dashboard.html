@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Dashboard - Math Adventure</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dashboard">
+  <div class="stars"></div>
+
+  <div class="navbar">
+    <div class="user-info">
+      <div class="user-avatar" id="user-avatar">🦁</div>
+      <div class="user-details">
+        <h2 id="user-name">Loading...</h2>
+        <p>Math Explorer</p>
+      </div>
+    </div>
+    <button class="btn btn-danger" onclick="logout()">Logout</button>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">🎮</div>
+      <div class="stat-value" id="total-games">0</div>
+      <div class="stat-label">Games Played</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-value" id="total-correct">0</div>
+      <div class="stat-label">Correct Answers</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🏆</div>
+      <div class="stat-value" id="high-score">0</div>
+      <div class="stat-label">High Score</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🎯</div>
+      <div class="stat-value" id="accuracy">0%</div>
+      <div class="stat-label">Accuracy</div>
+    </div>
+  </div>
+
+  <div class="game-menu">
+    <div class="game-card" onclick="startGame('addition')">
+      <div class="game-icon">➕</div>
+      <h3>Addition Challenge</h3>
+      <p>Solve as many addition problems as you can!</p>
+      <button class="btn btn-success">Play Now!</button>
+    </div>
+    <div class="game-card" style="opacity: 0.6;">
+      <div class="game-icon">➖</div>
+      <h3>Subtraction Quest</h3>
+      <p>Coming Soon!</p>
+      <button class="btn btn-secondary" disabled>Locked</button>
+    </div>
+    <div class="game-card" style="opacity: 0.6;">
+      <div class="game-icon">✖️</div>
+      <h3>Multiplication Mania</h3>
+      <p>Coming Soon!</p>
+      <button class="btn btn-secondary" disabled>Locked</button>
+    </div>
+  </div>
+
+  <div class="badges-section">
+    <h2>🏅 My Badges</h2>
+    <div class="badges-grid" id="badges-grid">
+      <div class="loading" style="margin: 20px auto;"></div>
+    </div>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
