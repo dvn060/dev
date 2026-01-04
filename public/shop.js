@@ -89,13 +89,24 @@ async function loadInventory() {
 }
 
 // Filter shop items
-function filterShop(filter) {
+function filterShop(filter, clickedElement = null) {
   shopState.currentFilter = filter;
 
   // Update active tab
   const tabs = document.querySelectorAll('.tab-btn');
   tabs.forEach(tab => tab.classList.remove('active'));
-  event.target.classList.add('active');
+
+  // Handle both click events and direct calls
+  if (clickedElement) {
+    clickedElement.classList.add('active');
+  } else if (window.event && window.event.target) {
+    window.event.target.classList.add('active');
+  } else {
+    // On initial load, activate the "All Items" tab
+    if (tabs.length > 0) {
+      tabs[0].classList.add('active');
+    }
+  }
 
   // Combine all items and pets
   let allShopItems = [
@@ -269,15 +280,20 @@ function displayShopItems(items) {
 
 // Show purchase confirmation modal
 function showPurchaseModal(item) {
+  if (!item || !item.name) {
+    console.error('Invalid item passed to showPurchaseModal:', item);
+    return;
+  }
+
   shopState.selectedItem = item;
 
-  document.getElementById('modal-item-icon').textContent = item.icon;
-  document.getElementById('modal-item-name').textContent = item.name;
-  document.getElementById('modal-item-description').textContent = item.description || `A ${item.rarity} ${item.item_type === 'pet' ? 'pet' : 'item'} for your collection!`;
+  document.getElementById('modal-item-icon').textContent = item.icon || '🎁';
+  document.getElementById('modal-item-name').textContent = item.name || 'Unknown Item';
+  document.getElementById('modal-item-description').textContent = item.description || `A ${item.rarity || 'common'} ${item.item_type === 'pet' ? 'pet' : 'item'} for your collection!`;
 
-  const costIcon = item.unlock_type === 'coins' ? '🪙' : '⭐';
+  const costIcon = item.unlock_type === 'coins' ? '🪙' : (item.unlock_type === 'stars' ? '⭐' : '💎');
   document.getElementById('modal-cost-icon').textContent = costIcon;
-  document.getElementById('modal-cost-amount').textContent = item.unlock_cost;
+  document.getElementById('modal-cost-amount').textContent = item.unlock_cost || 0;
 
   document.getElementById('purchase-modal').style.display = 'flex';
 }

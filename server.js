@@ -574,6 +574,10 @@ app.get('/shop', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'shop.html'));
 });
 
+app.get('/sounditout', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'sounditout.html'));
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`

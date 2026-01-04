@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sound it Out! - Math Adventure</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .word-slider-container {
+      margin: 40px auto;
+      max-width: 600px;
+    }
+
+    .word-display {
+      font-size: 6em;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 30px;
+      color: #667eea;
+      text-shadow: 3px 3px 6px rgba(0,0,0,0.1);
+    }
+
+    .slider-track {
+      position: relative;
+      height: 80px;
+      background: linear-gradient(135deg, #e0e7ff 0%, #f0e7ff 100%);
+      border-radius: 40px;
+      box-shadow: inset 0 4px 8px rgba(0,0,0,0.1);
+      margin: 30px 0;
+      cursor: pointer;
+    }
+
+    .slider-thumb {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 70px;
+      height: 70px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2em;
+      cursor: grab;
+      transition: transform 0.1s, box-shadow 0.1s;
+      user-select: none;
+    }
+
+    .slider-thumb:active {
+      cursor: grabbing;
+      transform: translateY(-50%) scale(1.1);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+    }
+
+    .slider-progress {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      border-radius: 40px;
+      opacity: 0.3;
+      transition: width 0.1s;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 1.2em;
+      color: #666;
+      margin-top: 10px;
+    }
+
+    .listening-indicator {
+      display: none;
+      text-align: center;
+      font-size: 1.5em;
+      color: #f5576c;
+      animation: pulse 1.5s infinite;
+      margin: 20px 0;
+    }
+
+    .listening-indicator.active {
+      display: block;
+    }
+
+    .voice-button {
+      font-size: 4em;
+      margin: 30px 0;
+      animation: none;
+    }
+
+    .voice-button.listening {
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .progress-bar {
+      background: #e0e0e0;
+      height: 30px;
+      border-radius: 15px;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #81FBB8 0%, #28C76F 100%);
+      transition: width 0.5s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="stars"></div>
+
+  <div class="game-container">
+    <!-- Header -->
+    <div class="game-header">
+      <div>
+        <button class="btn btn-secondary" onclick="window.location.href='/dashboard'">⬅️ Back</button>
+      </div>
+      <div style="font-size: 1.5em; font-weight: bold; color: #667eea;">
+        🗣️ Sound it Out!
+      </div>
+      <div style="font-size: 1.2em; font-weight: bold; color: #f5576c;">
+        Score: <span id="score">0</span> / <span id="total">10</span>
+      </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen">
+      <div class="game-area">
+        <div style="background: #fff3cd; padding: 20px; border-radius: 15px; margin-bottom: 30px; border: 2px solid #ffc107;">
+          <h3 style="color: #333; margin-bottom: 10px;">How to Play:</h3>
+          <p style="color: #666; margin: 0;">1️⃣ Drag the slider to hear the word</p>
+          <p style="color: #666; margin: 0;">2️⃣ Click "Try it!" and say the word out loud</p>
+          <p style="color: #666; margin: 0;">3️⃣ Get it right to move to the next word!</p>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-bar" style="width: 0%;">
+            <span id="progress-text">0 / 10</span>
+          </div>
+        </div>
+
+        <!-- Word Display -->
+        <div class="word-display" id="word-display">
+          cat
+        </div>
+
+        <!-- Slider -->
+        <div class="word-slider-container">
+          <div class="slider-track" id="slider-track">
+            <div class="slider-progress" id="slider-progress"></div>
+            <div class="slider-thumb" id="slider-thumb">👂</div>
+          </div>
+          <div class="slider-label">
+            <span>🔇 Drag to hear</span>
+            <span>🔊 Listen!</span>
+          </div>
+        </div>
+
+        <!-- Voice Recognition Button -->
+        <div style="text-align: center; margin-top: 50px;">
+          <button id="voice-button" class="btn btn-success voice-button" onclick="startListening()">
+            🎤 Try it!
+          </button>
+        </div>
+
+        <div class="listening-indicator" id="listening-indicator">
+          🎤 Listening...
+        </div>
+
+        <!-- Feedback -->
+        <div class="feedback" id="feedback"></div>
+
+        <!-- Skip Button -->
+        <div style="text-align: center; margin-top: 30px;">
+          <button class="btn btn-secondary" onclick="skipWord()">Skip Word ⏭️</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="results-screen" style="display: none;">
+      <div class="results-screen">
+        <h2>🎉 Great Job! 🎉</h2>
+
+        <div class="final-score">
+          <span id="final-score">0</span> / 10
+        </div>
+
+        <div style="font-size: 2em; margin: 30px 0;">
+          <span id="final-percentage">0%</span> Correct!
+        </div>
+
+        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 30px; border-radius: 20px; margin: 30px 0; color: white;">
+          <h3 style="margin-bottom: 15px;">🎁 You Earned!</h3>
+          <div style="font-size: 2em;">
+            🪙 <span id="coins-earned">0</span> Coins
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn btn-primary" onclick="playAgain()">Play Again! 🔄</button>
+          <button class="btn btn-secondary" onclick="window.location.href='/dashboard'">Dashboard 📊</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="sounditout.js"></script>
+</body>
+</html>

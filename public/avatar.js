@@ -112,42 +112,49 @@ async function unlockStarterItems() {
 
 // Update avatar display
 function updateAvatarDisplay() {
+  // Get user's base avatar from the database (stored in users table)
+  fetch('/api/user').then(r => r.json()).then(user => {
+    if (user.avatar) {
+      document.getElementById('equipped-face').textContent = user.avatar;
+    }
+  });
+
   // Update background
   const background = avatarState.equipped.background;
   if (background && background.icon) {
-    document.getElementById('equipped-background').innerHTML = `
-      <div style="font-size: 10em;">${background.icon}</div>
-    `;
+    const bgEl = document.getElementById('equipped-background');
+    bgEl.innerHTML = `<div style="font-size: 8em; opacity: 1;">${background.icon}</div>`;
+    bgEl.style.opacity = '0.3';
   }
 
-  // Update face/eyes
-  const eyes = avatarState.equipped.eyes;
-  if (eyes && eyes.icon) {
-    document.getElementById('equipped-face').textContent = eyes.icon;
-  }
-
-  // Update outfit
+  // Update outfit (shown as icon in collection)
   const outfit = avatarState.equipped.outfit;
+  const outfitEl = document.getElementById('equipped-outfit');
   if (outfit && outfit.icon) {
-    document.getElementById('equipped-outfit').textContent = outfit.icon;
+    outfitEl.textContent = outfit.icon;
+    outfitEl.style.display = 'block';
   } else {
-    document.getElementById('equipped-outfit').textContent = '';
+    outfitEl.style.display = 'none';
   }
 
-  // Update accessory
+  // Update accessory (shown as icon in collection)
   const accessory = avatarState.equipped.accessory;
+  const accessoryEl = document.getElementById('equipped-accessory');
   if (accessory && accessory.icon) {
-    document.getElementById('equipped-accessory').textContent = accessory.icon;
+    accessoryEl.textContent = accessory.icon;
+    accessoryEl.style.display = 'block';
   } else {
-    document.getElementById('equipped-accessory').textContent = '';
+    accessoryEl.style.display = 'none';
   }
 
   // Update pet
   const pet = avatarState.equipped.active_pet;
+  const petEl = document.getElementById('equipped-pet');
   if (pet && pet.icon) {
-    document.getElementById('equipped-pet').textContent = pet.icon;
+    petEl.textContent = pet.icon;
+    petEl.style.display = 'block';
   } else {
-    document.getElementById('equipped-pet').textContent = '';
+    petEl.style.display = 'none';
   }
 }
 

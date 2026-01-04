@@ -26,29 +26,26 @@
       <div style="background: white; padding: 40px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); text-align: center;">
         <h2 style="color: #333; margin-bottom: 30px;">Your Character</h2>
 
-        <div id="avatar-display" style="position: relative; width: 300px; height: 400px; margin: 0 auto; border-radius: 20px; overflow: hidden;">
+        <div id="avatar-display" style="position: relative; width: 300px; height: 400px; margin: 0 auto; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
           <!-- Background -->
-          <div id="equipped-background" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); display: flex; align-items: center; justify-content: center; font-size: 10em;">
+          <div id="equipped-background" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); display: flex; align-items: center; justify-content: center; font-size: 8em; opacity: 0.3;">
             🌿
           </div>
 
-          <!-- Character base -->
-          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 12em; z-index: 1;">
-            <span id="equipped-face">😊</span>
+          <!-- Main character (larger, centered) -->
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 1;">
+            <div id="equipped-face" style="font-size: 10em; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.2));">
+              👦
+            </div>
+            <!-- Items displayed as a collection below character -->
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+              <div id="equipped-outfit" style="font-size: 3em; background: white; padding: 10px; border-radius: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.1);"></div>
+              <div id="equipped-accessory" style="font-size: 3em; background: white; padding: 10px; border-radius: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.1);"></div>
+            </div>
           </div>
 
-          <!-- Outfit overlay -->
-          <div id="equipped-outfit" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -30%); font-size: 6em; z-index: 2;">
-            👕
-          </div>
-
-          <!-- Accessory -->
-          <div id="equipped-accessory" style="position: absolute; top: 55%; left: 60%; transform: translate(-50%, -50%); font-size: 4em; z-index: 3;">
-            🎒
-          </div>
-
-          <!-- Pet companion -->
-          <div id="equipped-pet" style="position: absolute; bottom: 20px; right: 20px; font-size: 4em; z-index: 4; animation: bounce 2s infinite;">
+          <!-- Pet companion (bottom right) -->
+          <div id="equipped-pet" style="position: absolute; bottom: 20px; right: 20px; font-size: 4em; z-index: 4; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.2)); animation: bounce 2s infinite;">
             🐶
           </div>
         </div>
