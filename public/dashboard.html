@@ -15,9 +15,18 @@
       <div class="user-details">
         <h2 id="user-name">Loading...</h2>
         <p>Math Explorer</p>
+        <div id="user-currency" style="display: flex; gap: 15px; margin-top: 5px; font-size: 1.1em;">
+          <span>⭐ <strong id="stars">0</strong></span>
+          <span>🪙 <strong id="coins">0</strong></span>
+          <span>Level <strong id="level">1</strong></span>
+        </div>
       </div>
     </div>
-    <button class="btn btn-danger" onclick="logout()">Logout</button>
+    <div style="display: flex; gap: 10px;">
+      <button class="btn btn-secondary" onclick="window.location.href='/avatar'">👤 Avatar</button>
+      <button class="btn btn-secondary" onclick="window.location.href='/shop'">🛒 Shop</button>
+      <button class="btn btn-danger" onclick="logout()">Logout</button>
+    </div>
   </div>
 
   <div class="stats-grid">
@@ -44,23 +53,23 @@
   </div>
 
   <div class="game-menu">
+    <div class="game-card" onclick="window.location.href='/campaign?type=math'">
+      <div class="game-icon">📚</div>
+      <h3>Math Campaign</h3>
+      <p>No timer! Progress through levels at your own pace</p>
+      <button class="btn btn-primary">Start Campaign!</button>
+    </div>
+    <div class="game-card" onclick="window.location.href='/campaign?type=reading'">
+      <div class="game-icon">📖</div>
+      <h3>Reading Campaign</h3>
+      <p>Learn and practice reading skills!</p>
+      <button class="btn btn-primary">Start Reading!</button>
+    </div>
     <div class="game-card" onclick="startGame('addition')">
-      <div class="game-icon">➕</div>
-      <h3>Addition Challenge</h3>
-      <p>Solve as many addition problems as you can!</p>
+      <div class="game-icon">⚡</div>
+      <h3>Timed Challenge</h3>
+      <p>Race against the clock!</p>
       <button class="btn btn-success">Play Now!</button>
-    </div>
-    <div class="game-card" style="opacity: 0.6;">
-      <div class="game-icon">➖</div>
-      <h3>Subtraction Quest</h3>
-      <p>Coming Soon!</p>
-      <button class="btn btn-secondary" disabled>Locked</button>
-    </div>
-    <div class="game-card" style="opacity: 0.6;">
-      <div class="game-icon">✖️</div>
-      <h3>Multiplication Mania</h3>
-      <p>Coming Soon!</p>
-      <button class="btn btn-secondary" disabled>Locked</button>
     </div>
   </div>
 

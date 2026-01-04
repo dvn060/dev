@@ -388,6 +388,163 @@ app.post('/api/parent/test-email', (req, res) => {
   });
 });
 
+// Campaign routes
+app.get('/api/campaign/progress/:type', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'Not logged in' });
+  }
+
+  const campaignType = req.params.type;
+  db.getCampaignProgress(req.session.userId, campaignType, (err, progress) => {
+    if (err) return res.status(500).json({ error: 'Server error' });
+    res.json(progress);
+  });
+});
+
+app.post('/api/campaign/complete', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'Not logged in' });
+  }
+
+  const { campaignType, level, stage, correctAnswers, totalQuestions } = req.body;
+
+  db.recordCampaignSession(
+    req.session.userId,
+    campaignType,
+    level,
+    stage,
+    correctAnswers,
+    totalQuestions,
+    (err, results) => {
+      if (err) return res.status(500).json({ error: 'Server error' });
+      res.json({ success: true, ...results });
+    }
+  );
+});
+
+app.post('/api/campaign/advance-stage', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'Not logged in' });
+  }
+
+  const { campaignType, newStage } = req.body;
+
+  db.updateCampaignStage(req.session.userId, campaignType, newStage, (err) => {
+    if (err) return res.status(500).json({ error: 'Server error' });
+    res.json({ success: true });
+  });
+});
+
+// Avatar and customization routes
+app.get('/api/avatar/items', (req, res) => {
+  db.getAvatarItems((err, items) => {
+    if (err) return res.status(500).json({ error: 'Server error' });
+    res.json(items);
+  });
+});
+
+app.get('/api/pets/all', (req, res) => {
+  db.getPets((err, pets) => {
+    if (err) return res.status(500).json({ error: 'Server error' });
+    res.json(pets);
+  });
+});
+
+app.get('/api/inventory', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'Not logged in' });
+  }
+
+  db.getUserInventory(req.session.userId, (err, inventory) => {
+    if (err) return res.status(500).json({ error: 'Server error' });
+    res.json(inventory);
+  });
+});
+
+app.get('/api/equipped', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'Not logged in' });
+  }
+
+  db.getEquippedItems(req.session.userId, (err, equipped) => {
+    if (err) return res.status(500).json({ error: 'Server error' });
+    res.json(equipped);
+  });
+});
+
+app.post('/api/purchase', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'Not logged in' });
+  }
+
+  const { itemType, itemId, cost } = req.body;
+
+  db.purchaseItem(req.session.userId, itemType, itemId, cost, (err, success) => {
+    if (err) {
+      if (err.message === 'Not enough coins') {
+        return res.status(400).json({ error: 'Not enough coins' });
+      }
+      return res.status(500).json({ error: 'Server error' });
+    }
+
+    if (!success) {
+      return res.status(400).json({ error: 'Item already owned' });
+    }
+
+    res.json({ success: true });
+  });
+});
+
+app.post('/api/equip', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'Not logged in' });
+  }
+
+  const { slotType, itemId } = req.body;
+
+  db.equipItem(req.session.userId, slotType, itemId, (err) => {
+    if (err) return res.status(500).json({ error: 'Server error' });
+    res.json({ success: true });
+  });
+});
+
+app.post('/api/unlock-starter-items', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'Not logged in' });
+  }
+
+  // Unlock starter items (level 1, cost 0)
+  db.db.all(`SELECT id, category FROM avatar_items WHERE unlock_level = 1 AND unlock_cost = 0`, [], (err, items) => {
+    if (err) return res.status(500).json({ error: 'Server error' });
+
+    const promises = items.map(item => {
+      return new Promise((resolve) => {
+        db.unlockItem(req.session.userId, 'avatar_item', item.id, () => {
+          // Auto-equip starter items
+          db.equipItem(req.session.userId, item.category, item.id, resolve);
+        });
+      });
+    });
+
+    // Also unlock starter pet
+    db.db.get(`SELECT id FROM pets WHERE unlock_cost = 0`, [], (err, pet) => {
+      if (pet) {
+        db.unlockItem(req.session.userId, 'pet', pet.id, () => {
+          db.equipItem(req.session.userId, 'active_pet', pet.id, () => {
+            Promise.all(promises).then(() => {
+              res.json({ success: true });
+            });
+          });
+        });
+      } else {
+        Promise.all(promises).then(() => {
+          res.json({ success: true });
+        });
+      }
+    });
+  });
+});
+
 // Serve HTML pages
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -403,6 +560,18 @@ app.get('/dashboard', (req, res) => {
 
 app.get('/parent', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'parent.html'));
+});
+
+app.get('/campaign', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'campaign.html'));
+});
+
+app.get('/avatar', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'avatar.html'));
+});
+
+app.get('/shop', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'shop.html'));
 });
 
 // Start server

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Avatar - Math Adventure</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dashboard">
+  <div class="stars"></div>
+
+  <div class="navbar">
+    <div class="user-info">
+      <div class="user-avatar" id="user-avatar">🦁</div>
+      <div class="user-details">
+        <h2 id="user-name">Loading...</h2>
+        <p>Customize Your Character!</p>
+      </div>
+    </div>
+    <button class="btn btn-danger" onclick="window.location.href='/dashboard'">⬅️ Back</button>
+  </div>
+
+  <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px;">
+      <!-- Avatar Display -->
+      <div style="background: white; padding: 40px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); text-align: center;">
+        <h2 style="color: #333; margin-bottom: 30px;">Your Character</h2>
+
+        <div id="avatar-display" style="position: relative; width: 300px; height: 400px; margin: 0 auto; border-radius: 20px; overflow: hidden;">
+          <!-- Background -->
+          <div id="equipped-background" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); display: flex; align-items: center; justify-content: center; font-size: 10em;">
+            🌿
+          </div>
+
+          <!-- Character base -->
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 12em; z-index: 1;">
+            <span id="equipped-face">😊</span>
+          </div>
+
+          <!-- Outfit overlay -->
+          <div id="equipped-outfit" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -30%); font-size: 6em; z-index: 2;">
+            👕
+          </div>
+
+          <!-- Accessory -->
+          <div id="equipped-accessory" style="position: absolute; top: 55%; left: 60%; transform: translate(-50%, -50%); font-size: 4em; z-index: 3;">
+            🎒
+          </div>
+
+          <!-- Pet companion -->
+          <div id="equipped-pet" style="position: absolute; bottom: 20px; right: 20px; font-size: 4em; z-index: 4; animation: bounce 2s infinite;">
+            🐶
+          </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+          <button class="btn btn-primary" onclick="window.location.href='/shop'" style="width: 100%;">
+            🛒 Visit Shop to Get More Items!
+          </button>
+        </div>
+      </div>
+
+      <!-- Customization Panel -->
+      <div style="background: white; padding: 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+        <h2 style="color: #333; margin-bottom: 20px;">Customize</h2>
+
+        <div id="customization-tabs" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+          <button class="tab-btn active" onclick="showCategory('eyes')">Eyes</button>
+          <button class="tab-btn" onclick="showCategory('outfit')">Outfit</button>
+          <button class="tab-btn" onclick="showCategory('accessory')">Accessory</button>
+          <button class="tab-btn" onclick="showCategory('background')">Background</button>
+          <button class="tab-btn" onclick="showCategory('pet')">Pets</button>
+        </div>
+
+        <div id="items-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; max-height: 500px; overflow-y: auto; padding: 10px;">
+          <!-- Items will be populated here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Owned Items Summary -->
+    <div style="background: white; padding: 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-top: 30px;">
+      <h2 style="color: #333; margin-bottom: 20px;">My Collection</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+        <div class="stat-card">
+          <div class="stat-icon">👕</div>
+          <div class="stat-value" id="total-items">0</div>
+          <div class="stat-label">Items Owned</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🐾</div>
+          <div class="stat-value" id="total-pets">0</div>
+          <div class="stat-label">Pets Collected</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-value" id="rare-items">0</div>
+          <div class="stat-label">Rare+ Items</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🏆</div>
+          <div class="stat-value" id="collection-percent">0%</div>
+          <div class="stat-label">Collection</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="avatar.js"></script>
+</body>
+</html>

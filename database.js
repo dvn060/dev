@@ -72,6 +72,81 @@ function initDatabase() {
       UNIQUE(user_id, date)
     )`);
 
+    // Campaign progress table
+    db.run(`CREATE TABLE IF NOT EXISTS campaign_progress (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      campaign_type TEXT NOT NULL CHECK(campaign_type IN ('math', 'reading')),
+      current_level INTEGER DEFAULT 1,
+      current_stage INTEGER DEFAULT 1,
+      total_stars INTEGER DEFAULT 0,
+      coins INTEGER DEFAULT 100,
+      experience INTEGER DEFAULT 0,
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      UNIQUE(user_id, campaign_type)
+    )`);
+
+    // Avatar items table (all available items in the game)
+    db.run(`CREATE TABLE IF NOT EXISTS avatar_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL CHECK(category IN ('hair', 'eyes', 'mouth', 'outfit', 'accessory', 'background')),
+      icon TEXT NOT NULL,
+      unlock_level INTEGER DEFAULT 1,
+      unlock_type TEXT NOT NULL CHECK(unlock_type IN ('level', 'coins', 'stars')),
+      unlock_cost INTEGER DEFAULT 0,
+      rarity TEXT DEFAULT 'common' CHECK(rarity IN ('common', 'rare', 'epic', 'legendary'))
+    )`);
+
+    // Pets/companions table
+    db.run(`CREATE TABLE IF NOT EXISTS pets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      icon TEXT NOT NULL,
+      description TEXT NOT NULL,
+      unlock_level INTEGER DEFAULT 1,
+      unlock_cost INTEGER DEFAULT 50,
+      rarity TEXT DEFAULT 'common' CHECK(rarity IN ('common', 'rare', 'epic', 'legendary')),
+      special_ability TEXT
+    )`);
+
+    // User inventory (items and pets the user has unlocked)
+    db.run(`CREATE TABLE IF NOT EXISTS user_inventory (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      item_type TEXT NOT NULL CHECK(item_type IN ('avatar_item', 'pet')),
+      item_id INTEGER NOT NULL,
+      acquired_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      UNIQUE(user_id, item_type, item_id)
+    )`);
+
+    // User equipped items (what the user currently has on their avatar)
+    db.run(`CREATE TABLE IF NOT EXISTS user_equipped (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      slot_type TEXT NOT NULL CHECK(slot_type IN ('hair', 'eyes', 'mouth', 'outfit', 'accessory', 'background', 'active_pet')),
+      item_id INTEGER,
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      UNIQUE(user_id, slot_type)
+    )`);
+
+    // Campaign sessions (untimed practice sessions)
+    db.run(`CREATE TABLE IF NOT EXISTS campaign_sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      campaign_type TEXT NOT NULL,
+      level INTEGER NOT NULL,
+      stage INTEGER NOT NULL,
+      stars_earned INTEGER DEFAULT 0,
+      coins_earned INTEGER DEFAULT 0,
+      experience_earned INTEGER DEFAULT 0,
+      correct_answers INTEGER NOT NULL,
+      total_questions INTEGER NOT NULL,
+      completed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )`);
+
     // Insert default badges
     const badges = [
       { name: 'First Steps', description: 'Played your first game!', icon: '🌟', requirement_type: 'games_played', requirement_value: 1, color: '#FFD700' },
@@ -91,6 +166,68 @@ function initDatabase() {
       stmt.run(badge.name, badge.description, badge.icon, badge.requirement_type, badge.requirement_value, badge.color);
     });
     stmt.finalize();
+
+    // Insert default avatar items
+    const avatarItems = [
+      // Hair styles
+      { name: 'Short Hair', category: 'hair', icon: '🧑', unlock_level: 1, unlock_type: 'level', unlock_cost: 0, rarity: 'common' },
+      { name: 'Long Hair', category: 'hair', icon: '👩', unlock_level: 2, unlock_type: 'coins', unlock_cost: 50, rarity: 'common' },
+      { name: 'Curly Hair', category: 'hair', icon: '🧒', unlock_level: 5, unlock_type: 'coins', unlock_cost: 100, rarity: 'rare' },
+      { name: 'Rainbow Hair', category: 'hair', icon: '🌈', unlock_level: 10, unlock_type: 'stars', unlock_cost: 50, rarity: 'epic' },
+      { name: 'Crown Hair', category: 'hair', icon: '👑', unlock_level: 15, unlock_type: 'stars', unlock_cost: 100, rarity: 'legendary' },
+
+      // Eyes
+      { name: 'Happy Eyes', category: 'eyes', icon: '😊', unlock_level: 1, unlock_type: 'level', unlock_cost: 0, rarity: 'common' },
+      { name: 'Cool Eyes', category: 'eyes', icon: '😎', unlock_level: 3, unlock_type: 'coins', unlock_cost: 75, rarity: 'common' },
+      { name: 'Star Eyes', category: 'eyes', icon: '🤩', unlock_level: 7, unlock_type: 'coins', unlock_cost: 150, rarity: 'rare' },
+      { name: 'Heart Eyes', category: 'eyes', icon: '😍', unlock_level: 12, unlock_type: 'stars', unlock_cost: 75, rarity: 'epic' },
+
+      // Outfits
+      { name: 'Casual Outfit', category: 'outfit', icon: '👕', unlock_level: 1, unlock_type: 'level', unlock_cost: 0, rarity: 'common' },
+      { name: 'Sports Outfit', category: 'outfit', icon: '⚽', unlock_level: 4, unlock_type: 'coins', unlock_cost: 100, rarity: 'common' },
+      { name: 'Superhero Outfit', category: 'outfit', icon: '🦸', unlock_level: 8, unlock_type: 'coins', unlock_cost: 200, rarity: 'rare' },
+      { name: 'Wizard Robe', category: 'outfit', icon: '🧙', unlock_level: 12, unlock_type: 'stars', unlock_cost: 80, rarity: 'epic' },
+      { name: 'Royal Outfit', category: 'outfit', icon: '🤴', unlock_level: 20, unlock_type: 'stars', unlock_cost: 150, rarity: 'legendary' },
+
+      // Accessories
+      { name: 'Backpack', category: 'accessory', icon: '🎒', unlock_level: 2, unlock_type: 'coins', unlock_cost: 25, rarity: 'common' },
+      { name: 'Magic Wand', category: 'accessory', icon: '🪄', unlock_level: 6, unlock_type: 'coins', unlock_cost: 125, rarity: 'rare' },
+      { name: 'Shield', category: 'accessory', icon: '🛡️', unlock_level: 9, unlock_type: 'stars', unlock_cost: 60, rarity: 'rare' },
+      { name: 'Light Saber', category: 'accessory', icon: '⚔️', unlock_level: 14, unlock_type: 'stars', unlock_cost: 120, rarity: 'epic' },
+
+      // Backgrounds
+      { name: 'Grass Field', category: 'background', icon: '🌿', unlock_level: 1, unlock_type: 'level', unlock_cost: 0, rarity: 'common' },
+      { name: 'Beach', category: 'background', icon: '🏖️', unlock_level: 3, unlock_type: 'coins', unlock_cost: 80, rarity: 'common' },
+      { name: 'Space', category: 'background', icon: '🌌', unlock_level: 8, unlock_type: 'coins', unlock_cost: 180, rarity: 'rare' },
+      { name: 'Castle', category: 'background', icon: '🏰', unlock_level: 15, unlock_type: 'stars', unlock_cost: 100, rarity: 'epic' },
+      { name: 'Rainbow Land', category: 'background', icon: '🌈', unlock_level: 25, unlock_type: 'stars', unlock_cost: 200, rarity: 'legendary' }
+    ];
+
+    const itemStmt = db.prepare(`INSERT OR IGNORE INTO avatar_items (name, category, icon, unlock_level, unlock_type, unlock_cost, rarity) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+    avatarItems.forEach(item => {
+      itemStmt.run(item.name, item.category, item.icon, item.unlock_level, item.unlock_type, item.unlock_cost, item.rarity);
+    });
+    itemStmt.finalize();
+
+    // Insert default pets
+    const pets = [
+      { name: 'Puppy', icon: '🐶', description: 'A loyal friend who loves math!', unlock_level: 1, unlock_cost: 0, rarity: 'common', special_ability: 'Bonus XP +5%' },
+      { name: 'Kitten', icon: '🐱', description: 'Curious and playful!', unlock_level: 2, unlock_cost: 100, rarity: 'common', special_ability: 'Bonus Coins +5%' },
+      { name: 'Bunny', icon: '🐰', description: 'Hops with joy for every answer!', unlock_level: 4, unlock_cost: 150, rarity: 'common', special_ability: 'Extra Star Chance +10%' },
+      { name: 'Dragon', icon: '🐉', description: 'A mighty companion!', unlock_level: 7, unlock_cost: 300, rarity: 'rare', special_ability: 'Bonus XP +10%' },
+      { name: 'Unicorn', icon: '🦄', description: 'Magical and rare!', unlock_level: 10, unlock_cost: 500, rarity: 'epic', special_ability: 'Bonus Stars +15%' },
+      { name: 'Phoenix', icon: '🔥', description: 'Rises from the ashes!', unlock_level: 15, unlock_cost: 800, rarity: 'epic', special_ability: 'Second Chance on Wrong Answers' },
+      { name: 'Robot', icon: '🤖', description: 'Calculates perfectly!', unlock_level: 12, unlock_cost: 600, rarity: 'rare', special_ability: 'Show Hints' },
+      { name: 'Owl', icon: '🦉', description: 'Wise and knowledgeable!', unlock_level: 8, unlock_cost: 400, rarity: 'rare', special_ability: 'Reading Bonus +10%' },
+      { name: 'Turtle', icon: '🐢', description: 'Slow and steady wins!', unlock_level: 5, unlock_cost: 200, rarity: 'common', special_ability: 'Extra Time in Challenges' },
+      { name: 'Pegasus', icon: '🦄✨', description: 'Legendary flying horse!', unlock_level: 20, unlock_cost: 1000, rarity: 'legendary', special_ability: 'All Bonuses +20%' }
+    ];
+
+    const petStmt = db.prepare(`INSERT OR IGNORE INTO pets (name, icon, description, unlock_level, unlock_cost, rarity, special_ability) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+    pets.forEach(pet => {
+      petStmt.run(pet.name, pet.icon, pet.description, pet.unlock_level, pet.unlock_cost, pet.rarity, pet.special_ability);
+    });
+    petStmt.finalize();
 
     console.log('Database initialized successfully!');
   });
@@ -272,6 +409,190 @@ function getDailyReport(userId, date, callback) {
   `, [userId, date], callback);
 }
 
+// Campaign functions
+function getCampaignProgress(userId, campaignType, callback) {
+  db.get(`
+    SELECT * FROM campaign_progress
+    WHERE user_id = ? AND campaign_type = ?
+  `, [userId, campaignType], (err, progress) => {
+    if (err) return callback(err);
+
+    // If no progress exists, create initial progress
+    if (!progress) {
+      db.run(
+        `INSERT INTO campaign_progress (user_id, campaign_type, current_level, current_stage, coins)
+         VALUES (?, ?, 1, 1, 100)`,
+        [userId, campaignType],
+        function(err) {
+          if (err) return callback(err);
+          getCampaignProgress(userId, campaignType, callback);
+        }
+      );
+    } else {
+      callback(null, progress);
+    }
+  });
+}
+
+function recordCampaignSession(userId, campaignType, level, stage, correct, total, callback) {
+  // Calculate rewards based on performance
+  const accuracy = total > 0 ? (correct / total) : 0;
+  let starsEarned = 0;
+  if (accuracy >= 0.95) starsEarned = 3;
+  else if (accuracy >= 0.80) starsEarned = 2;
+  else if (accuracy >= 0.60) starsEarned = 1;
+
+  const coinsEarned = Math.floor(correct * 10 + starsEarned * 20);
+  const experienceEarned = Math.floor(correct * 15 + starsEarned * 30);
+
+  // Record the session
+  db.run(
+    `INSERT INTO campaign_sessions (user_id, campaign_type, level, stage, stars_earned, coins_earned, experience_earned, correct_answers, total_questions)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [userId, campaignType, level, stage, starsEarned, coinsEarned, experienceEarned, correct, total],
+    function(err) {
+      if (err) return callback(err);
+
+      // Update campaign progress
+      db.run(
+        `UPDATE campaign_progress
+         SET total_stars = total_stars + ?,
+             coins = coins + ?,
+             experience = experience + ?
+         WHERE user_id = ? AND campaign_type = ?`,
+        [starsEarned, coinsEarned, experienceEarned, userId, campaignType],
+        (err) => {
+          if (err) return callback(err);
+
+          // Check if player should level up (every 100 XP)
+          db.get(
+            `SELECT * FROM campaign_progress WHERE user_id = ? AND campaign_type = ?`,
+            [userId, campaignType],
+            (err, progress) => {
+              if (err) return callback(err);
+
+              const newLevel = Math.floor(progress.experience / 100) + 1;
+              if (newLevel > progress.current_level) {
+                db.run(
+                  `UPDATE campaign_progress SET current_level = ? WHERE user_id = ? AND campaign_type = ?`,
+                  [newLevel, userId, campaignType],
+                  (err) => {
+                    if (err) return callback(err);
+                    callback(null, { starsEarned, coinsEarned, experienceEarned, leveledUp: true, newLevel });
+                  }
+                );
+              } else {
+                callback(null, { starsEarned, coinsEarned, experienceEarned, leveledUp: false });
+              }
+            }
+          );
+        }
+      );
+    }
+  );
+}
+
+function updateCampaignStage(userId, campaignType, newStage, callback) {
+  db.run(
+    `UPDATE campaign_progress SET current_stage = ? WHERE user_id = ? AND campaign_type = ?`,
+    [newStage, userId, campaignType],
+    callback
+  );
+}
+
+// Avatar and item functions
+function getAvatarItems(callback) {
+  db.all(`SELECT * FROM avatar_items ORDER BY category, unlock_level`, [], callback);
+}
+
+function getPets(callback) {
+  db.all(`SELECT * FROM pets ORDER BY unlock_level`, [], callback);
+}
+
+function getUserInventory(userId, callback) {
+  db.all(`
+    SELECT ui.*,
+           CASE
+             WHEN ui.item_type = 'avatar_item' THEN ai.name
+             WHEN ui.item_type = 'pet' THEN p.name
+           END as item_name,
+           CASE
+             WHEN ui.item_type = 'avatar_item' THEN ai.icon
+             WHEN ui.item_type = 'pet' THEN p.icon
+           END as item_icon,
+           CASE
+             WHEN ui.item_type = 'avatar_item' THEN ai.category
+             ELSE 'pet'
+           END as category
+    FROM user_inventory ui
+    LEFT JOIN avatar_items ai ON ui.item_type = 'avatar_item' AND ui.item_id = ai.id
+    LEFT JOIN pets p ON ui.item_type = 'pet' AND ui.item_id = p.id
+    WHERE ui.user_id = ?
+  `, [userId], callback);
+}
+
+function unlockItem(userId, itemType, itemId, callback) {
+  db.run(
+    `INSERT OR IGNORE INTO user_inventory (user_id, item_type, item_id) VALUES (?, ?, ?)`,
+    [userId, itemType, itemId],
+    function(err) {
+      callback(err, this.changes > 0);
+    }
+  );
+}
+
+function purchaseItem(userId, itemType, itemId, cost, callback) {
+  // First check if user has enough coins
+  getCampaignProgress(userId, 'math', (err, progress) => {
+    if (err) return callback(err);
+
+    if (progress.coins < cost) {
+      return callback(new Error('Not enough coins'));
+    }
+
+    // Deduct coins
+    db.run(
+      `UPDATE campaign_progress SET coins = coins - ? WHERE user_id = ? AND campaign_type = 'math'`,
+      [cost, userId],
+      (err) => {
+        if (err) return callback(err);
+
+        // Unlock the item
+        unlockItem(userId, itemType, itemId, callback);
+      }
+    );
+  });
+}
+
+function equipItem(userId, slotType, itemId, callback) {
+  db.run(
+    `INSERT INTO user_equipped (user_id, slot_type, item_id)
+     VALUES (?, ?, ?)
+     ON CONFLICT(user_id, slot_type)
+     DO UPDATE SET item_id = ?`,
+    [userId, slotType, itemId, itemId],
+    callback
+  );
+}
+
+function getEquippedItems(userId, callback) {
+  db.all(`
+    SELECT ue.*,
+           CASE
+             WHEN ue.slot_type = 'active_pet' THEN p.icon
+             ELSE ai.icon
+           END as icon,
+           CASE
+             WHEN ue.slot_type = 'active_pet' THEN p.name
+             ELSE ai.name
+           END as name
+    FROM user_equipped ue
+    LEFT JOIN avatar_items ai ON ue.slot_type != 'active_pet' AND ue.item_id = ai.id
+    LEFT JOIN pets p ON ue.slot_type = 'active_pet' AND ue.item_id = p.id
+    WHERE ue.user_id = ?
+  `, [userId], callback);
+}
+
 module.exports = {
   db,
   initDatabase,
@@ -282,5 +603,15 @@ module.exports = {
   getUserBadges,
   getUserStats,
   getChildrenStats,
-  getDailyReport
+  getDailyReport,
+  getCampaignProgress,
+  recordCampaignSession,
+  updateCampaignStage,
+  getAvatarItems,
+  getPets,
+  getUserInventory,
+  unlockItem,
+  purchaseItem,
+  equipItem,
+  getEquippedItems
 };

@@ -42,6 +42,18 @@ async function loadUserData() {
     : 0;
   document.getElementById('accuracy').textContent = accuracy + '%';
 
+  // Load campaign progress
+  try {
+    const progressResponse = await fetch('/api/campaign/progress/math');
+    const progress = await progressResponse.json();
+
+    document.getElementById('stars').textContent = progress.total_stars || 0;
+    document.getElementById('coins').textContent = progress.coins || 0;
+    document.getElementById('level').textContent = progress.current_level || 1;
+  } catch (error) {
+    console.log('Campaign progress not loaded yet');
+  }
+
   // Load badges
   await loadBadges();
 }
