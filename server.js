@@ -578,6 +578,10 @@ app.get('/sounditout', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'sounditout.html'));
 });
 
+app.get('/listenchoose', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'listenchoose.html'));
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`

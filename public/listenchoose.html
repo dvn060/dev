@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Listen & Choose - Math Adventure</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .listen-button {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: white;
+      font-size: 6em;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+      transition: all 0.3s;
+      margin: 40px auto;
+      display: block;
+    }
+
+    .listen-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+    }
+
+    .listen-button:active {
+      transform: scale(0.95);
+    }
+
+    .listen-button.playing {
+      animation: pulse-glow 1s infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+      }
+      50% {
+        transform: scale(1.08);
+        box-shadow: 0 15px 50px rgba(102, 126, 234, 0.8);
+      }
+    }
+
+    .choices-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      max-width: 600px;
+      margin: 40px auto;
+    }
+
+    .choice-button {
+      padding: 30px;
+      font-size: 2.5em;
+      font-weight: bold;
+      border-radius: 15px;
+      border: 3px solid #ddd;
+      background: white;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .choice-button:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      border-color: #667eea;
+    }
+
+    .choice-button.correct {
+      background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+      color: white;
+      border-color: #56ab2f;
+      animation: success-bounce 0.6s;
+    }
+
+    .choice-button.incorrect {
+      background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+      color: white;
+      border-color: #eb3349;
+      animation: shake 0.5s;
+    }
+
+    @keyframes success-bounce {
+      0%, 100% { transform: translateY(0); }
+      25% { transform: translateY(-15px); }
+      50% { transform: translateY(0); }
+      75% { transform: translateY(-8px); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      50% { transform: translateX(10px); }
+      75% { transform: translateX(-10px); }
+    }
+
+    .instruction-text {
+      text-align: center;
+      font-size: 2em;
+      color: #667eea;
+      margin: 30px 0;
+      font-weight: bold;
+    }
+
+    .progress-bar {
+      background: #e0e0e0;
+      height: 30px;
+      border-radius: 15px;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #81FBB8 0%, #28C76F 100%);
+      transition: width 0.5s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="stars"></div>
+
+  <div class="game-container">
+    <!-- Header -->
+    <div class="game-header">
+      <div>
+        <button class="btn btn-secondary" onclick="window.location.href='/dashboard'">⬅️ Back</button>
+      </div>
+      <div style="font-size: 1.5em; font-weight: bold; color: #667eea;">
+        👂 Listen & Choose
+      </div>
+      <div style="font-size: 1.2em; font-weight: bold; color: #f5576c;">
+        Score: <span id="score">0</span> / <span id="total">10</span>
+      </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen">
+      <div class="game-area">
+        <div style="background: #fff3cd; padding: 20px; border-radius: 15px; margin-bottom: 30px; border: 2px solid #ffc107;">
+          <h3 style="color: #333; margin-bottom: 10px;">How to Play:</h3>
+          <p style="color: #666; margin: 0;">1️⃣ Click the speaker button to hear a word</p>
+          <p style="color: #666; margin: 0;">2️⃣ Choose the correct word from the options below</p>
+          <p style="color: #666; margin: 0;">3️⃣ Get points for each correct answer!</p>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-bar" style="width: 0%;">
+            <span id="progress-text">0 / 10</span>
+          </div>
+        </div>
+
+        <!-- Instruction -->
+        <div class="instruction-text" id="instruction">
+          Click the speaker to hear the word! 🔊
+        </div>
+
+        <!-- Listen Button -->
+        <button class="listen-button" id="listen-button" onclick="playWord()">
+          🔊
+        </button>
+
+        <!-- Choices -->
+        <div class="choices-grid" id="choices-grid">
+          <!-- Choices will be populated by JavaScript -->
+        </div>
+
+        <!-- Feedback -->
+        <div class="feedback" id="feedback" style="text-align: center; min-height: 60px;"></div>
+
+        <!-- Next Button (hidden until answer selected) -->
+        <div style="text-align: center; margin-top: 30px;">
+          <button id="next-button" class="btn btn-primary" onclick="nextQuestion()" style="display: none; font-size: 1.5em;">
+            Next ➡️
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="results-screen" style="display: none;">
+      <div class="results-screen">
+        <h2>🎉 Great Job! 🎉</h2>
+
+        <div class="final-score">
+          <span id="final-score">0</span> / 10
+        </div>
+
+        <div style="font-size: 2em; margin: 30px 0;">
+          <span id="final-percentage">0%</span> Correct!
+        </div>
+
+        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 30px; border-radius: 20px; margin: 30px 0; color: white;">
+          <h3 style="margin-bottom: 15px;">🎁 You Earned!</h3>
+          <div style="font-size: 2em;">
+            🪙 <span id="coins-earned">0</span> Coins
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn btn-primary" onclick="playAgain()">Play Again! 🔄</button>
+          <button class="btn btn-secondary" onclick="window.location.href='/dashboard'">Dashboard 📊</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="listenchoose.js"></script>
+</body>
+</html>

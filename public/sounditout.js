@@ -38,11 +38,18 @@ function initSpeechRecognition() {
   recognition.interimResults = false;
   recognition.lang = 'en-US';
 
+  recognition.onstart = function() {
+    console.log('Speech recognition started');
+  };
+
   recognition.onresult = function(event) {
+    console.log('Recognition result received:', event);
     const transcript = event.results[0][0].transcript.toLowerCase().trim();
     const confidence = event.results[0][0].confidence;
 
     console.log('Heard:', transcript, 'Confidence:', confidence);
+    console.log('Expected:', gameState.words[gameState.currentWordIndex]);
+
     checkPronunciation(transcript);
   };
 
@@ -54,9 +61,11 @@ function initSpeechRecognition() {
     if (event.error === 'no-speech') {
       showFeedback('😕 I didn\'t hear anything. Try again!', 'incorrect');
     } else if (event.error === 'not-allowed') {
-      showFeedback('🎤 Please allow microphone access!', 'incorrect');
+      showFeedback('🎤 Please allow microphone access in your browser!', 'incorrect');
+    } else if (event.error === 'aborted') {
+      showFeedback('🔄 Recognition cancelled. Try again!', 'incorrect');
     } else {
-      showFeedback('❌ Something went wrong. Try again!', 'incorrect');
+      showFeedback('❌ Error: ' + event.error + '. Try again!', 'incorrect');
     }
   };
 
@@ -273,12 +282,14 @@ function updateListeningUI() {
 // Check pronunciation
 function checkPronunciation(spokenWord) {
   const currentWord = gameState.words[gameState.currentWordIndex].toLowerCase();
-  const spoken = spokenWord.toLowerCase();
+  const spoken = spokenWord.toLowerCase().trim();
 
   console.log('Expected:', currentWord, 'Got:', spoken);
 
-  // Check for exact match or close match
-  if (spoken === currentWord || spoken.includes(currentWord) || currentWord.includes(spoken)) {
+  // Calculate similarity
+  const isMatch = checkWordMatch(currentWord, spoken);
+
+  if (isMatch) {
     // Correct!
     gameState.correctCount++;
     showFeedback('🎉 Perfect! You said it right!', 'correct');
@@ -292,13 +303,73 @@ function checkPronunciation(spokenWord) {
     }, 2000);
   } else {
     // Incorrect - but let them try again
-    showFeedback(`🤔 Hmm, I heard "${spokenWord}". Try again!`, 'incorrect');
+    showFeedback(`🤔 I heard "${spokenWord}". Try again!`, 'incorrect');
 
     // Play the word again to help
     setTimeout(() => {
       speakWord(currentWord, 0.7);
     }, 1500);
   }
+}
+
+// Check if spoken word matches expected word (with fuzzy matching)
+function checkWordMatch(expected, spoken) {
+  // Exact match
+  if (expected === spoken) return true;
+
+  // Contains match (either way)
+  if (spoken.includes(expected) || expected.includes(spoken)) return true;
+
+  // Check if spoken sentence contains the word
+  const words = spoken.split(/\s+/);
+  if (words.includes(expected)) return true;
+
+  // Check for common speech recognition errors
+  // (e.g., "a cat" instead of "cat", "the dog" instead of "dog")
+  for (const word of words) {
+    if (word === expected) return true;
+    // Remove common articles/prefixes
+    const cleaned = word.replace(/^(a|an|the)\s+/, '');
+    if (cleaned === expected) return true;
+  }
+
+  // Check edit distance for close matches (allows 1-2 character difference)
+  if (levenshteinDistance(expected, spoken) <= Math.max(1, expected.length / 4)) {
+    return true;
+  }
+
+  return false;
+}
+
+// Calculate Levenshtein distance (edit distance) between two strings
+function levenshteinDistance(str1, str2) {
+  const len1 = str1.length;
+  const len2 = str2.length;
+  const matrix = [];
+
+  for (let i = 0; i <= len1; i++) {
+    matrix[i] = [i];
+  }
+
+  for (let j = 0; j <= len2; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= len1; i++) {
+    for (let j = 1; j <= len2; j++) {
+      if (str1[i - 1] === str2[j - 1]) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1, // substitution
+          matrix[i][j - 1] + 1,     // insertion
+          matrix[i - 1][j] + 1      // deletion
+        );
+      }
+    }
+  }
+
+  return matrix[len1][len2];
 }
 
 // Show feedback
