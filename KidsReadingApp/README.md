@@ -30,8 +30,8 @@ A professional, five-star quality iPad reading app that teaches phonics to child
 You can deploy this app to your personal iPad using just a **free Apple ID** and Xcode. Here's how:
 
 #### Prerequisites
-1. **Mac computer** with macOS 12.0 or later
-2. **Xcode 15.0 or later** (free from the Mac App Store)
+1. **Mac computer** with macOS 11.3 or later
+2. **Xcode 13.2 or later** (free from the Mac App Store)
 3. **iPad** running iOS 15.0 or later
 4. **Free Apple ID** (your regular Apple account)
 5. **USB cable** to connect iPad to Mac
