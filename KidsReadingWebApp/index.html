@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Kids Reading - Phonics Learning</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Level Selection Screen -->
+        <div id="level-selection" class="screen active">
+            <div class="header-title">
+                <div class="emoji-icon">🎓</div>
+                <h1 class="app-title">Kids Reading</h1>
+                <p class="subtitle">Learn to read with phonics!</p>
+            </div>
+
+            <h2 class="section-title">Choose Your Level</h2>
+
+            <div class="level-grid">
+                <button class="level-card" data-level="preK" style="background: linear-gradient(135deg, #b794f6, #9f7aea);">
+                    <div class="level-info">
+                        <h3 class="level-name">Pre-K</h3>
+                        <p class="level-desc">Ages 4-5 • Simple CVC words</p>
+                    </div>
+                    <div class="level-icon">→</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" data-progress="preK"></div>
+                    </div>
+                    <p class="progress-text" data-progress-text="preK">0% Complete</p>
+                </button>
+
+                <button class="level-card" data-level="kindergarten" style="background: linear-gradient(135deg, #63b3ed, #4299e1);">
+                    <div class="level-info">
+                        <h3 class="level-name">Kindergarten</h3>
+                        <p class="level-desc">Ages 5-6 • Digraphs & blends</p>
+                    </div>
+                    <div class="level-icon">→</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" data-progress="kindergarten"></div>
+                    </div>
+                    <p class="progress-text" data-progress-text="kindergarten">0% Complete</p>
+                </button>
+
+                <button class="level-card" data-level="firstGrade" style="background: linear-gradient(135deg, #68d391, #48bb78);">
+                    <div class="level-info">
+                        <h3 class="level-name">1st Grade</h3>
+                        <p class="level-desc">Ages 6-7 • Vowel teams</p>
+                    </div>
+                    <div class="level-icon">→</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" data-progress="firstGrade"></div>
+                    </div>
+                    <p class="progress-text" data-progress-text="firstGrade">0% Complete</p>
+                </button>
+
+                <button class="level-card" data-level="secondGrade" style="background: linear-gradient(135deg, #fbb66e, #f6ad55);">
+                    <div class="level-info">
+                        <h3 class="level-name">2nd Grade</h3>
+                        <p class="level-desc">Ages 7-8 • Complex words</p>
+                    </div>
+                    <div class="level-icon">→</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" data-progress="secondGrade"></div>
+                    </div>
+                    <p class="progress-text" data-progress-text="secondGrade">0% Complete</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- Learning Screen -->
+        <div id="learning-screen" class="screen">
+            <!-- Header -->
+            <div class="learning-header">
+                <button id="back-btn" class="btn-back">
+                    <span class="icon">←</span> Levels
+                </button>
+                <div class="word-counter">
+                    <span id="current-level-name"></span>
+                    <span id="word-position">Word 1 of 10</span>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="learning-content">
+                <!-- Word Display -->
+                <div class="word-display">
+                    <div id="word-emoji" class="word-emoji">🐱</div>
+
+                    <div class="phoneme-container" id="phoneme-display">
+                        <!-- Phonemes will be inserted here -->
+                    </div>
+
+                    <p class="instruction-text" id="instruction-text">Slide to sound it out!</p>
+                </div>
+
+                <!-- Slider Control -->
+                <div class="slider-section">
+                    <div class="slider-container">
+                        <div class="slider-track">
+                            <div class="slider-progress" id="slider-progress"></div>
+                            <div class="slider-thumb" id="slider-thumb">
+                                <span class="thumb-icon">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slider-labels">
+                        <span>Start</span>
+                        <span>End</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button class="action-btn btn-sound" id="play-phoneme-btn">
+                        <span class="btn-icon">🔊</span>
+                        <span class="btn-label">Sound</span>
+                    </button>
+
+                    <button class="action-btn btn-word" id="play-word-btn">
+                        <span class="btn-icon">▶️</span>
+                        <span class="btn-label">Full Word</span>
+                    </button>
+
+                    <button class="action-btn btn-practice" id="practice-btn">
+                        <span class="btn-icon">🎤</span>
+                        <span class="btn-label">Practice</span>
+                    </button>
+                </div>
+
+                <!-- Recording Section (Hidden by default) -->
+                <div class="recording-section" id="recording-section">
+                    <div class="recording-card">
+                        <h3>Practice Time!</h3>
+                        <p class="recording-instruction">Say the word: <strong id="practice-word"></strong></p>
+
+                        <div class="recording-controls">
+                            <button class="record-btn" id="record-btn">
+                                <span class="record-icon">⏺</span>
+                                <span id="record-label">Start Recording</span>
+                            </button>
+
+                            <button class="playback-btn" id="playback-btn" disabled>
+                                <span class="playback-icon">▶️</span>
+                                <span>Play My Recording</span>
+                            </button>
+                        </div>
+
+                        <div class="recording-status" id="recording-status"></div>
+
+                        <button class="close-practice-btn" id="close-practice-btn">Close Practice</button>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="nav-buttons">
+                    <button class="nav-btn" id="prev-btn">
+                        <span class="nav-icon">←</span> Previous
+                    </button>
+                    <button class="nav-btn" id="next-btn">
+                        Next <span class="nav-icon">→</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Success Animation -->
+            <div class="success-overlay" id="success-overlay">
+                <div class="success-content">
+                    <div class="success-emoji">🎉</div>
+                    <h2>Great Job!</h2>
+                    <p>You completed the word!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Permission Modal -->
+    <div class="modal" id="permission-modal">
+        <div class="modal-content">
+            <h2>Microphone Access Needed</h2>
+            <p>To practice pronunciation, we need access to your microphone. Click "Allow" when your browser asks for permission.</p>
+            <button class="btn-primary" id="grant-permission-btn">Enable Microphone</button>
+            <button class="btn-secondary" id="skip-permission-btn">Skip for Now</button>
+        </div>
+    </div>
+
+    <script src="js/word-data.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
