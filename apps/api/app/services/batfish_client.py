@@ -82,26 +82,9 @@ def _materialize_snapshot(db: Session, snapshot: Snapshot, dest: Path) -> int:
     return len(devices)
 
 
-def run_traceroute(
-    db: Session,
-    snapshot: Snapshot,
-    src_ip: str,
-    dst_ip: str,
-    protocol: str,
-    dst_port: int | None,
-    src_port: int | None,
-    start_location: str,
-) -> dict[str, Any]:
-    """Initialize the snapshot in Batfish (idempotent by name) and run a
-    bidirectional-unaware forward traceroute for the flow.
-
-    Returns {status, traces: [...], parse_warnings: [...]} where each trace is
-    {disposition, hops: [{node, steps: [{type, detail, acl_name?}]}]}.
-    Raises RuntimeError with a user-readable message on failure.
-    """
-    from pybatfish.datamodel.flow import HeaderConstraints
-
-    bf = _pybatfish_session()
+def _ensure_snapshot(bf, db: Session, snapshot: Snapshot) -> str:
+    """Initialize the snapshot in Batfish if absent (idempotent by name).
+    The Batfish network is scoped per workspace. Returns the snapshot name."""
     network_name = f"ne_{snapshot.workspace_id}"
     snapshot_name = f"snap_{snapshot.id}"
     bf.set_network(network_name)
@@ -119,6 +102,30 @@ def run_traceroute(
                 raise RuntimeError("Snapshot has no device configurations.")
             bf.init_snapshot(str(tmp), name=snapshot_name, overwrite=True)
             snapshot.batfish_snapshot_name = snapshot_name
+    return snapshot_name
+
+
+def run_traceroute(
+    db: Session,
+    snapshot: Snapshot,
+    src_ip: str,
+    dst_ip: str,
+    protocol: str,
+    dst_port: int | None,
+    src_port: int | None,
+    start_location: str,
+) -> dict[str, Any]:
+    """Initialize the snapshot in Batfish (idempotent by name) and run a
+    forward traceroute for the flow.
+
+    Returns {status, traces: [...], parse_warnings: [...]} where each trace is
+    {disposition, hops: [{node, steps: [{type, detail, acl_name?}]}]}.
+    Raises RuntimeError with a user-readable message on failure.
+    """
+    from pybatfish.datamodel.flow import HeaderConstraints
+
+    bf = _pybatfish_session()
+    snapshot_name = _ensure_snapshot(bf, db, snapshot)
     bf.set_snapshot(snapshot_name)
 
     # Parse-status issues from Batfish are evidence about analysis coverage.
@@ -143,9 +150,16 @@ def run_traceroute(
     answer = bf.q.traceroute(startLocation=start_location, headers=headers).answer()
     frame = answer.frame()
 
+    traces_out = _extract_traces(frame)
+    return {"status": "ok", "traces": traces_out, "parse_warnings": parse_warnings}
+
+
+def _extract_traces(frame, column: str = "Traces") -> list[dict]:
+    """Convert a pybatfish trace column into plain dicts (shape observed
+    against the live service; see fixtures/README.md for verified output)."""
     traces_out: list[dict] = []
     for _, row in frame.iterrows():
-        for trace in row.get("Traces", []):
+        for trace in row.get(column) or []:
             hops_out = []
             for hop in trace.hops:
                 steps_out = []
@@ -174,4 +188,68 @@ def run_traceroute(
                 hops_out.append({"node": str(hop.node), "steps": steps_out})
             traces_out.append({"disposition": str(trace.disposition), "hops": hops_out})
 
-    return {"status": "ok", "traces": traces_out, "parse_warnings": parse_warnings}
+    return traces_out
+
+
+def run_differential_reachability(
+    db: Session,
+    base: Snapshot,
+    target: Snapshot,
+    src_ip: str | None = None,
+    dst_ip: str | None = None,
+    protocol: str | None = None,
+    dst_port: int | None = None,
+) -> dict[str, Any]:
+    """Batfish differential reachability: flows whose forwarding outcome
+    differs between two snapshots of the same workspace.
+
+    This is the engine-computed answer to "what did this change break?" —
+    fundamentally different from the config-diff heuristic in diff.py.
+    Returns {status, flows: [{...flow, reference_dispositions,
+    snapshot_dispositions, snapshot_traces, reference_traces}]}.
+    """
+    from pybatfish.datamodel.flow import HeaderConstraints
+
+    if base.workspace_id != target.workspace_id:
+        raise RuntimeError("Snapshots must belong to the same workspace.")
+
+    bf = _pybatfish_session()
+    base_name = _ensure_snapshot(bf, db, base)
+    target_name = _ensure_snapshot(bf, db, target)
+
+    header_kwargs: dict[str, Any] = {}
+    if src_ip:
+        header_kwargs["srcIps"] = src_ip
+    if dst_ip:
+        header_kwargs["dstIps"] = dst_ip
+    if protocol and protocol != "ip":
+        header_kwargs["ipProtocols"] = [protocol.upper()]
+    if dst_port is not None:
+        header_kwargs["dstPorts"] = str(dst_port)
+
+    question = bf.q.differentialReachability(
+        headers=HeaderConstraints(**header_kwargs) if header_kwargs else None
+    )
+    frame = question.answer(snapshot=target_name, reference_snapshot=base_name).frame()
+
+    flows_out: list[dict] = []
+    for _, row in frame.iterrows():
+        flow = row.get("Flow")
+        snap_traces = _extract_traces(frame.loc[[row.name]], column="Snapshot_Traces")
+        ref_traces = _extract_traces(frame.loc[[row.name]], column="Reference_Traces")
+        flows_out.append({
+            "flow": str(flow),
+            "src_ip": str(getattr(flow, "srcIp", "")),
+            "dst_ip": str(getattr(flow, "dstIp", "")),
+            "ip_protocol": str(getattr(flow, "ipProtocol", "")),
+            "dst_port": getattr(flow, "dstPort", None),
+            "start_location": str(getattr(flow, "ingressNode", "") or "")
+            + (f"[{getattr(flow, 'ingressInterface', '')}]"
+               if getattr(flow, "ingressInterface", None) else ""),
+            "reference_dispositions": sorted({t["disposition"] for t in ref_traces}),
+            "snapshot_dispositions": sorted({t["disposition"] for t in snap_traces}),
+            "reference_traces": ref_traces,
+            "snapshot_traces": snap_traces,
+        })
+
+    return {"status": "ok", "flows": flows_out}

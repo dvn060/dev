@@ -30,10 +30,14 @@ RADIUS keys, pre-shared keys, and addressing that maps your attack surface.
   container, which is deleted afterwards.
 * Delete a snapshot or workspace in the UI and the stored configurations are
   removed with it (SQLite cascade). Use `docker volume rm` to destroy all data.
-* The MVP does **not** redact secrets on display. Anyone with access to the
-  machine (or to exported screenshots) can read what the configs contain.
-  Sanitize archives before import if that is a concern; redaction-on-ingest
-  is on the roadmap.
+* Credential material (enable/username secrets, SNMP communities,
+  TACACS/RADIUS keys, IPsec PSKs, routing-auth keys, …) is detected at
+  import (`app/services/secrets.py`) and **redacted by default everywhere**:
+  config viewer, search, diffs, and report exports. The only unredacted
+  surfaces are the explicit config viewer toggle (`?redacted=false`) and an
+  explicitly requested unredacted report — both clearly labeled. Detection
+  is pattern-based and biased toward over-matching, but cannot be guaranteed
+  exhaustive for exotic syntax: treat the database file itself as sensitive.
 
 ## Upload safety
 
@@ -58,7 +62,6 @@ Imports parse untrusted files, so the importer:
   on a trusted machine. Do not port-forward or reverse-proxy it as-is.
 * **No encryption at rest**: the SQLite database is plaintext inside the
   Docker volume. Use OS-level disk encryption (e.g. BitLocker) if required.
-* **No secret redaction** on display (see above).
 
 ## Reporting
 

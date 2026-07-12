@@ -314,6 +314,10 @@ def analyze_path(
         "verdict": verdict,
         "verdict_source": "batfish",
         "verdict_explanation": _explain(verdict, dispositions, traces),
+        # Distinct Batfish dispositions (DENIED_IN vs DENIED_OUT vs NO_ROUTE vs
+        # NULL_ROUTED ...) are first-class: the UI must never collapse them
+        # into a generic "blocked".
+        "dispositions": sorted(dispositions),
         "batfish": status,
         "start_location": start_location,
         "traces": traces,

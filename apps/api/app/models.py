@@ -152,7 +152,19 @@ class Device(Base):
     warning_count: Mapped[int] = mapped_column(Integer, default=0)
     parse_warnings: Mapped[list] = mapped_column(JSON, default=list)  # [{line, message}]
     completeness_score: Mapped[float] = mapped_column(Float, default=0.0)
+    # Detected credential material: [{line, kind, redacted_line}]. All API
+    # surfaces serve redacted content by default; see services/secrets.py.
+    secret_lines: Mapped[list] = mapped_column(JSON, default=list)
     raw_config: Mapped[str] = mapped_column(Text)
+
+    @property
+    def secret_count(self) -> int:
+        return len(self.secret_lines or [])
+
+    @property
+    def redacted_config(self) -> str:
+        from .services.secrets import redact_config_text
+        return redact_config_text(self.raw_config, self.secret_lines or [])
 
     snapshot: Mapped[Snapshot] = relationship(back_populates="devices")
     interfaces: Mapped[list["Interface"]] = relationship(

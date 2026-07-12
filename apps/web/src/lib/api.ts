@@ -8,6 +8,7 @@ import {
   DeviceConfigSchema,
   DeviceDetailSchema,
   DeviceSummarySchema,
+  DifferentialResultSchema,
   DiffResultSchema,
   HealthSchema,
   ImportDetailSchema,
@@ -100,8 +101,8 @@ export const api = {
   listDevices: (snapshotId: string) =>
     request(z.array(DeviceSummarySchema), `/api/snapshots/${snapshotId}/devices`),
   getDevice: (deviceId: string) => request(DeviceDetailSchema, `/api/devices/${deviceId}`),
-  getDeviceConfig: (deviceId: string) =>
-    request(DeviceConfigSchema, `/api/devices/${deviceId}/config`),
+  getDeviceConfig: (deviceId: string, redacted = true) =>
+    request(DeviceConfigSchema, `/api/devices/${deviceId}/config?redacted=${redacted}`),
 
   getTopology: (snapshotId: string) =>
     request(TopologySchema, `/api/snapshots/${snapshotId}/topology`),
@@ -119,6 +120,18 @@ export const api = {
     request(
       DiffResultSchema,
       `/api/workspaces/${workspaceId}/diff?base=${encodeURIComponent(base)}&target=${encodeURIComponent(target)}`,
+    ),
+
+  diffReachability: (
+    workspaceId: string,
+    base: string,
+    target: string,
+    query?: Partial<PathQueryInput>,
+  ) =>
+    request(
+      DifferentialResultSchema,
+      `/api/workspaces/${workspaceId}/diff/reachability?base=${encodeURIComponent(base)}&target=${encodeURIComponent(target)}`,
+      json(query ?? {}),
     ),
 
   diffSuspects: (workspaceId: string, base: string, target: string, query: PathQueryInput) =>

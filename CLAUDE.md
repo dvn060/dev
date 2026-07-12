@@ -88,8 +88,10 @@ after import, bidirectional traceroute, `searchFilters` reachability, route
 
 ## Known limitations
 
-* Single user, no auth, no encryption at rest, no secret redaction
-  (SECURITY.md). Loopback binding is the safety boundary.
+* Single user, no auth, no encryption at rest (SECURITY.md). Loopback
+  binding is the safety boundary. Secrets are redacted by default on every
+  output surface; the config viewer's "Show secrets" toggle is the one
+  sanctioned exception.
 * Parser models IOS/IOS-XE well; NX-OS basics; no object-groups, time-ranges
   or IPv6 routes (flagged as warnings, entries marked `unsupported`).
 * Degraded path analysis (no Batfish) yields verdict `unknown` by design.
@@ -105,8 +107,13 @@ after import, bidirectional traceroute, `searchFilters` reachability, route
    (start backend with `NE_JOBS_SYNC=true NE_BATFISH_ENABLED=false`, then
    `npm run e2e`).
 4. Manual sanity: import `fixtures/ncm-archives/ncm-archive-baseline.zip`,
-   expect 4 devices at 100% completeness; path-analyze 10.10.10.42 →
-   10.10.20.50 tcp/443; import `…-changed.zip` and confirm suspect #1 is the
-   removed `permit … eq 443` on DIST-SW-01 (score 100).
-5. Update this file, ARCHITECTURE.md and ROADMAP.md when behavior, commands
-   or milestones change.
+   expect 5 devices at 100% completeness; path-analyze 10.10.10.42 →
+   10.10.20.50 tcp/443 (expected dispositions per fixture flow are tabulated
+   in fixtures/README.md — verified against live Batfish). Import
+   `…-changed.zip` and run differential reachability (engine) — it must find
+   the tcp/443 flow going DELIVERED_TO_SUBNET → DENIED_OUT; the heuristic
+   suspect ranker is the clearly-labeled fallback.
+5. Secrets: any change touching config output paths must keep
+   `tests/test_secrets.py` green (redaction-by-default leak hunt).
+6. Update this file, ARCHITECTURE.md, ROADMAP.md and GAPS.md when behavior,
+   commands or milestones change.

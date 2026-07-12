@@ -17,7 +17,7 @@ def test_diff_detects_semantic_changes(client, workspace_id):
     assert diff["devices_added"] == []
     assert diff["devices_removed"] == []
     assert set(diff["devices_changed"]) == {"ACCESS-SW-01", "CORE-RTR-01", "DIST-SW-01"}
-    assert diff["devices_unchanged"] == ["EDGE-FW-01"]
+    assert diff["devices_unchanged"] == ["EDGE-FW-01", "LAB-RTR-01"]
 
     acl_changes = [c for c in diff["changes"] if c["category"] == "acl"]
     assert len(acl_changes) == 1
@@ -60,8 +60,9 @@ def test_suspect_ranking_finds_the_culprit(client, workspace_id):
 
     # The cosmetic description change must not appear as a suspect
     assert not any(s.get("field") == "description" for s in body["suspects"])
-    # And the honest scope note is present
-    assert "not a forwarding simulation" in body["note"]
+    # And the honest fallback language is present
+    assert "temporal correlation" in body["note"]
+    assert "does not simulate forwarding" in body["note"]
 
 
 def test_suspect_ranking_ignores_unrelated_flow(client, workspace_id):

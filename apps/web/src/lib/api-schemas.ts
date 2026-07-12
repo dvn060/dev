@@ -66,6 +66,7 @@ export const DeviceSummarySchema = z.object({
   parse_status: z.string(),
   warning_count: z.number(),
   completeness_score: z.number(),
+  secret_count: z.number(),
 });
 export type DeviceSummary = z.infer<typeof DeviceSummarySchema>;
 
@@ -149,6 +150,9 @@ export const DeviceConfigSchema = z.object({
   device_id: z.string(),
   hostname: z.string(),
   source_filename: z.string(),
+  redacted: z.boolean(),
+  secret_count: z.number(),
+  secret_line_numbers: z.array(z.number()),
   lines: z.array(z.string()),
 });
 export type DeviceConfig = z.infer<typeof DeviceConfigSchema>;
@@ -235,6 +239,7 @@ export const PathResultSchema = z.object({
   verdict: z.enum(['permitted', 'denied', 'undeliverable', 'mixed', 'unknown', 'error']),
   verdict_source: z.enum(['batfish', 'none']),
   verdict_explanation: z.string(),
+  dispositions: z.array(z.string()).optional(),
   batfish: z.object({ available: z.boolean(), detail: z.string() }).passthrough(),
   candidate_evidence: z.array(CandidateEvidenceSchema).optional(),
   traces: z
@@ -311,6 +316,28 @@ export const SuspectsResultSchema = z.object({
   note: z.string(),
 });
 export type SuspectsResult = z.infer<typeof SuspectsResultSchema>;
+
+export const DifferentialFlowSchema = z.object({
+  flow: z.string(),
+  src_ip: z.string(),
+  dst_ip: z.string(),
+  ip_protocol: z.string(),
+  dst_port: z.number().nullable(),
+  start_location: z.string(),
+  reference_dispositions: z.array(z.string()),
+  snapshot_dispositions: z.array(z.string()),
+});
+export type DifferentialFlow = z.infer<typeof DifferentialFlowSchema>;
+
+export const DifferentialResultSchema = z.object({
+  status: z.enum(['ok', 'unavailable']),
+  batfish: z.object({ available: z.boolean(), detail: z.string() }).passthrough(),
+  base_snapshot: z.object({ id: z.string(), name: z.string() }).optional(),
+  target_snapshot: z.object({ id: z.string(), name: z.string() }).optional(),
+  flows: z.array(DifferentialFlowSchema.passthrough()),
+  note: z.string(),
+});
+export type DifferentialResult = z.infer<typeof DifferentialResultSchema>;
 
 export const SearchResultSchema = z.object({
   query: z.string(),

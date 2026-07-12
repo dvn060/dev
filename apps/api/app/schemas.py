@@ -155,6 +155,7 @@ class DeviceSummaryOut(ORMModel):
     parse_status: str
     warning_count: int
     completeness_score: float
+    secret_count: int
 
 
 class DeviceDetailOut(DeviceSummaryOut):
@@ -170,6 +171,9 @@ class DeviceConfigOut(BaseModel):
     device_id: str
     hostname: str
     source_filename: str
+    redacted: bool  # False only via the explicit unredacted viewer
+    secret_count: int
+    secret_line_numbers: list[int]
     lines: list[str]  # index 0 == config line 1
 
 
@@ -200,6 +204,34 @@ class PathQuery(BaseModel):
 
 class SuspectQuery(PathQuery):
     pass
+
+
+class DifferentialQuery(BaseModel):
+    """Optional header-space scope for differential reachability. All fields
+    optional: an empty query asks Batfish about the whole flow space."""
+
+    src_ip: str | None = None
+    dst_ip: str | None = None
+    protocol: str | None = None
+    dst_port: int | None = Field(default=None, ge=1, le=65535)
+
+    @field_validator("src_ip", "dst_ip")
+    @classmethod
+    def _valid_ip(cls, v: str | None) -> str | None:
+        if v is not None:
+            import ipaddress
+            ipaddress.ip_address(v)
+        return v
+
+    @field_validator("protocol")
+    @classmethod
+    def _valid_protocol(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        allowed = {"tcp", "udp", "icmp", "ip"}
+        if v.lower() not in allowed:
+            raise ValueError(f"protocol must be one of {sorted(allowed)}")
+        return v.lower()
 
 
 # ---- jobs ---------------------------------------------------------------------

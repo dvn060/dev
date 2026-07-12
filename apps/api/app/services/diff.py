@@ -57,14 +57,24 @@ def compare_snapshots(db: Session, base: Snapshot, target: Snapshot) -> dict[str
         b, t = base_devices[hostname], target_devices[hostname]
         if b.config_hash == t.config_hash:
             continue
+        # Diffs are built from redacted configs: secret values (and secret
+        # rotations) must not leak through diff output.
         raw_diff = list(difflib.unified_diff(
-            b.raw_config.splitlines(),
-            t.raw_config.splitlines(),
+            b.redacted_config.splitlines(),
+            t.redacted_config.splitlines(),
             fromfile=f"{hostname} @ {base.display_name}",
             tofile=f"{hostname} @ {target.display_name}",
             lineterm="",
             n=3,
         ))
+        if not raw_diff:
+            # The configs differ (hashes differ) but the redacted texts are
+            # identical: the only changes are inside redacted secret values.
+            # Say so instead of showing a silently empty diff.
+            raw_diff = [
+                "(configuration changed, but all textual differences are within "
+                "redacted secret values — e.g. a credential rotation)"
+            ]
         changes = _semantic_changes(hostname, b, t)
         all_changes.extend(changes)
         device_diffs.append({

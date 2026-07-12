@@ -29,6 +29,7 @@ from ..models import (
 )
 from . import ncm
 from .cisco_parser import ParsedDevice, parse_cisco_config
+from .secrets import detect_secrets
 
 logger = logging.getLogger(__name__)
 
@@ -251,6 +252,7 @@ def _persist_device(
         warning_count=len(parsed.warnings),
         parse_warnings=[w.as_dict() for w in parsed.warnings],
         completeness_score=parsed.completeness,
+        secret_lines=[s.as_dict() for s in detect_secrets(candidate.content)],
         raw_config=candidate.content,
     )
     db.add(device)

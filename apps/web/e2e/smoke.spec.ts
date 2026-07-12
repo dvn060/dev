@@ -32,19 +32,19 @@ test('full investigation workflow', async ({ page }) => {
   await page.getByRole('button', { name: 'Import' }).click();
   await expect(page.getByText(/completed/).nth(1)).toBeVisible({ timeout: 15_000 });
 
-  // Snapshot shows 4 devices; open a device and its evidence
+  // Snapshot shows 5 devices; open a device and its evidence
   await page.getByRole('link', { name: 'Snapshots' }).click();
   await page.getByRole('link', { name: 'Baseline' }).click();
-  await expect(page.getByText('4 devices')).toBeVisible();
+  await expect(page.getByText('5 devices')).toBeVisible();
   await page.getByRole('link', { name: 'DIST-SW-01' }).click();
   await expect(page.getByText(/% parsed/)).toBeVisible();
 
   // ACL tab -> click an evidence line -> config viewer highlights it
   await page.getByRole('button', { name: /ACLs/ }).click();
   await expect(page.getByText('SERVERS-IN')).toBeVisible();
-  await page.getByRole('link', { name: 'L82' }).first().click();
+  await page.getByRole('link', { name: /^L\d+$/ }).first().click();
   await expect(page).toHaveURL(/config\?lines=/);
-  await expect(page.getByText('Configuration')).toBeVisible();
+  await expect(page.getByText('Configuration', { exact: true })).toBeVisible();
 
   // Path analysis: engine off -> verdict must be Unknown, with evidence
   await page.goBack();

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -6,14 +8,19 @@ from ..db import get_db
 from ..models import Device, Snapshot, Workspace
 from ..schemas import (
     DeviceSummaryOut,
+    DifferentialQuery,
     PathQuery,
     SnapshotOut,
     SnapshotUpdate,
 )
+from ..services.batfish_client import batfish_status, run_differential_reachability
 from ..services.diff import compare_snapshots, rank_suspects
 from ..services.pathfinder import analyze_path
+from ..services.report import render_snapshot_report
 from ..services.topology import build_topology
 from .workspaces import get_workspace
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["snapshots"])
 
@@ -76,6 +83,23 @@ def snapshot_topology(snapshot: Snapshot = Depends(get_snapshot), db: Session = 
     return build_topology(db, snapshot.id)
 
 
+@router.get("/snapshots/{snapshot_id}/report")
+def snapshot_report(
+    redacted: bool = True,
+    snapshot: Snapshot = Depends(get_snapshot),
+    db: Session = Depends(get_db),
+):
+    """Standalone HTML report. Secrets are redacted unless the caller
+    explicitly requests ?redacted=false."""
+    html_text = render_snapshot_report(db, snapshot, redacted=redacted)
+    filename = f"{snapshot.display_name}-report.html".replace(" ", "_")
+    return Response(
+        content=html_text,
+        media_type="text/html",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
+
+
 @router.get("/snapshots/{snapshot_id}/search")
 def search_snapshot(
     q: str = Query(min_length=2, max_length=200),
@@ -90,7 +114,9 @@ def search_snapshot(
     needle = q.lower()
     hits = []
     for device in devices:
-        for idx, line in enumerate(device.raw_config.splitlines(), start=1):
+        # Search over redacted content: secret values must be unfindable and
+        # unleakable through search results.
+        for idx, line in enumerate(device.redacted_config.splitlines(), start=1):
             if needle in line.lower():
                 hits.append({
                     "device_id": device.id,
@@ -132,6 +158,59 @@ def workspace_diff(
     return compare_snapshots(db, base_snap, target_snap)
 
 
+@router.post("/workspaces/{workspace_id}/diff/reachability")
+def diff_reachability(
+    base: str,
+    target: str,
+    payload: DifferentialQuery | None = None,
+    workspace: Workspace = Depends(get_workspace),
+    db: Session = Depends(get_db),
+):
+    """Batfish differential reachability: engine-computed flows whose outcome
+    differs between the two snapshots. This is the authoritative answer to
+    'what did this change break?'. Requires the analysis engine."""
+    base_snap = db.get(Snapshot, base)
+    target_snap = db.get(Snapshot, target)
+    for snap, label in ((base_snap, "base"), (target_snap, "target")):
+        if snap is None or snap.workspace_id != workspace.id:
+            raise HTTPException(status_code=404, detail=f"{label} snapshot not found in workspace")
+    assert base_snap is not None and target_snap is not None
+
+    status = batfish_status()
+    if not status["available"]:
+        return {
+            "status": "unavailable",
+            "batfish": status,
+            "flows": [],
+            "note": (
+                "Batfish is not available, so no differential reachability could be "
+                "computed. The heuristic change ranking (temporal correlation only) "
+                "is the only fallback."
+            ),
+        }
+    q = payload or DifferentialQuery()
+    try:
+        result = run_differential_reachability(
+            db, base_snap, target_snap,
+            src_ip=q.src_ip, dst_ip=q.dst_ip, protocol=q.protocol, dst_port=q.dst_port,
+        )
+    except Exception as exc:
+        logger.exception("Differential reachability failed")
+        raise HTTPException(status_code=502, detail=f"Batfish analysis failed: {exc}") from exc
+    return {
+        "status": "ok",
+        "batfish": status,
+        "base_snapshot": {"id": base_snap.id, "name": base_snap.display_name},
+        "target_snapshot": {"id": target_snap.id, "name": target_snap.display_name},
+        "flows": result["flows"],
+        "note": (
+            "Flows computed by Batfish whose forwarding outcome differs between the "
+            "two snapshots (reference = base). An empty list means the engine found "
+            "no behavioral difference for the queried header space."
+        ),
+    }
+
+
 @router.post("/workspaces/{workspace_id}/diff/suspects")
 def diff_suspects(
     payload: PathQuery,
@@ -140,8 +219,10 @@ def diff_suspects(
     workspace: Workspace = Depends(get_workspace),
     db: Session = Depends(get_db),
 ):
-    """Rank the changes between two snapshots by likelihood of having broken
-    the given flow. Heuristic; results are labeled confidence=inferred."""
+    """FALLBACK: rank config changes by plausibility of having broken the
+    given flow. This is temporal correlation over the config diff only — not
+    a behavioral analysis. Prefer /diff/reachability (Batfish) when the
+    engine is available."""
     base_snap = db.get(Snapshot, base)
     target_snap = db.get(Snapshot, target)
     for snap, label in ((base_snap, "base"), (target_snap, "target")):
@@ -161,8 +242,10 @@ def diff_suspects(
         "total_changes": len(comparison["changes"]),
         "suspects": suspects,
         "note": (
-            "Ranking is a deterministic heuristic over configuration changes. "
-            "It prioritizes investigation; it is not a forwarding simulation. "
-            "Use path analysis on both snapshots for a Batfish-computed verdict."
+            "Fallback heuristic: ranks configuration changes by temporal correlation "
+            "with the broken flow only — which changes touched objects matching this "
+            "flow between the two snapshots. It does not simulate forwarding and can "
+            "be wrong in both directions. When the analysis engine is available, "
+            "differential reachability (/diff/reachability) is the authoritative answer."
         ),
     }

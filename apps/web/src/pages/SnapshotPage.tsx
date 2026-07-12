@@ -66,6 +66,15 @@ export function SnapshotPage() {
             {snap.warning_count} warnings
           </Badge>
         )}
+        <a
+          href={`/api/snapshots/${snap.id}/report`}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-900 hover:bg-slate-100"
+          title="Standalone HTML report; secrets redacted"
+        >
+          Export report
+        </a>
       </div>
 
       <Tabs

@@ -4,7 +4,8 @@ import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { api, type PathQueryInput } from '../lib/api';
-import type { DiffResult, SemanticChange, SuspectsResult } from '../lib/api-schemas';
+import type { DifferentialResult, DiffResult, SemanticChange, SuspectsResult } from '../lib/api-schemas';
+import { dispositionMeta } from '../lib/confidence';
 import { EvidenceLink } from '../components/EvidenceLink';
 import {
   Badge,
@@ -89,6 +90,11 @@ export function ComparePage() {
       {diff.data && (
         <>
           <DiffSummary diff={diff.data} />
+          <DifferentialPanel
+            workspaceId={workspaceId}
+            base={defaults.base}
+            target={defaults.target}
+          />
           <SuspectFinder workspaceId={workspaceId} base={defaults.base} target={defaults.target} />
           <ChangesList diff={diff.data} />
           <RawDiffs diff={diff.data} />
@@ -122,6 +128,86 @@ function DiffSummary({ diff }: { diff: DiffResult }) {
   );
 }
 
+function DifferentialPanel({
+  workspaceId,
+  base,
+  target,
+}: {
+  workspaceId: string;
+  base: string;
+  target: string;
+}) {
+  const differential = useMutation({
+    mutationFn: () => api.diffReachability(workspaceId, base, target),
+  });
+
+  return (
+    <Card>
+      <CardHeader
+        title="Engine-verified impact (differential reachability)"
+        subtitle="The analysis engine computes which flows behave differently between the two snapshots. This is the authoritative answer to 'what did this change break?'."
+        actions={
+          <Button onClick={() => differential.mutate()} disabled={differential.isPending}>
+            <SearchCheck size={14} aria-hidden />
+            {differential.isPending ? 'Computing…' : 'Compute impact'}
+          </Button>
+        }
+      />
+      {differential.isPending && <Spinner label="Asking the analysis engine…" />}
+      {differential.isError && (
+        <div className="p-4">
+          <ErrorNote error={differential.error} />
+        </div>
+      )}
+      {differential.data && <DifferentialFlows result={differential.data} />}
+    </Card>
+  );
+}
+
+function DifferentialFlows({ result }: { result: DifferentialResult }) {
+  if (result.status === 'unavailable') {
+    return (
+      <div className="space-y-1 p-4">
+        <p className="text-sm font-medium text-amber-800">Analysis engine unavailable</p>
+        <p className="text-xs text-slate-500">{result.note}</p>
+        <p className="text-xs text-slate-500">{result.batfish.detail}</p>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <p className="px-4 pt-3 text-xs text-slate-500">{result.note}</p>
+      {result.flows.length === 0 ? (
+        <div className="p-4">
+          <EmptyState title="No behavioral difference found by the engine" />
+        </div>
+      ) : (
+        <ul className="divide-y divide-slate-100">
+          {result.flows.map((f, i) => (
+            <li key={i} className="flex flex-wrap items-center gap-2 px-4 py-2.5 text-sm">
+              <span className="font-mono text-xs text-slate-800">
+                {f.src_ip} → {f.dst_ip} {f.ip_protocol}
+                {f.dst_port != null ? `/${f.dst_port}` : ''}
+              </span>
+              {f.reference_dispositions.map((d) => (
+                <Badge key={`r${d}`} className={dispositionMeta(d).className} title={d}>
+                  was: {dispositionMeta(d).label}
+                </Badge>
+              ))}
+              <span className="text-slate-400">→</span>
+              {f.snapshot_dispositions.map((d) => (
+                <Badge key={`s${d}`} className={dispositionMeta(d).className} title={d}>
+                  now: {dispositionMeta(d).label}
+                </Badge>
+              ))}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function SuspectFinder({
   workspaceId,
   base,
@@ -143,8 +229,8 @@ function SuspectFinder({
   return (
     <Card>
       <CardHeader
-        title="What broke this flow?"
-        subtitle="Describe a communication that worked on the base snapshot but fails on the target. Changes are ranked by how plausibly they broke it — an investigation aid, not a simulation."
+        title="Fallback: correlate config changes with a broken flow"
+        subtitle="Heuristic based on temporal correlation only — it ranks which configuration changes touched objects matching the flow, without simulating forwarding. Prefer 'Engine-verified impact' above when the analysis engine is available."
       />
       <form
         className="flex flex-wrap items-end gap-3 p-4"

@@ -6,7 +6,8 @@ Produces, under fixtures/ncm-archives/:
                               plus an older Running copy, a Startup copy and a
                               readme to exercise the importer's selection and
                               skip logic.
-  ncm-archive-changed.zip   — the changed snapshot in the same layout.
+  ncm-archive-changed.zip   — the broken state (ACL permit removed).
+  ncm-archive-restored.zip  — the fix applied on top of the changed state.
 
 Run: python scripts/build_fixture_archives.py
 """
@@ -21,6 +22,7 @@ OUT = ROOT / "fixtures" / "ncm-archives"
 SNAPSHOTS = {
     "baseline": "2024-05-01_020000",
     "changed": "2024-06-05_020000",
+    "restored": "2024-07-02_020000",
 }
 
 

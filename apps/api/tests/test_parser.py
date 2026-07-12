@@ -11,15 +11,18 @@ def test_parses_core_router_inventory():
 
     names = {i.name for i in parsed.interfaces}
     assert {"Loopback0", "GigabitEthernet0/0", "GigabitEthernet0/1",
-            "GigabitEthernet0/2"} <= names
+            "GigabitEthernet0/2", "GigabitEthernet0/3"} <= names
 
     gi00 = next(i for i in parsed.interfaces if i.name == "GigabitEthernet0/0")
     assert gi00.ip_addresses[0].address == "10.0.0.1"
     assert gi00.ip_addresses[0].prefix_length == 30
     assert gi00.layer_role == "l3"
 
-    gi02 = next(i for i in parsed.interfaces if i.name == "GigabitEthernet0/2")
-    assert gi02.admin_state == "shutdown"
+    gi03 = next(i for i in parsed.interfaces if i.name == "GigabitEthernet0/3")
+    assert gi03.admin_state == "shutdown"
+
+    null_route = next(r for r in parsed.static_routes if r.prefix == "10.66.66.0/24")
+    assert null_route.next_hop_interface == "Null0"
 
     default = next(r for r in parsed.static_routes if r.prefix == "0.0.0.0/0")
     assert default.next_hop_ip == "10.0.1.2"

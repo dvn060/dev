@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, type PathQueryInput } from '../lib/api';
 import type { PathResult } from '../lib/api-schemas';
-import { VERDICT_META } from '../lib/confidence';
+import { dispositionMeta, VERDICT_META } from '../lib/confidence';
 import { EvidenceLink } from '../components/EvidenceLink';
 import {
   Badge,
@@ -120,6 +120,14 @@ function PathResultView({ result }: { result: PathResult }) {
           <span className={`rounded-md px-3 py-1 text-sm font-semibold ${meta.className}`}>
             {meta.label}
           </span>
+          {result.dispositions?.map((d) => {
+            const dm = dispositionMeta(d);
+            return (
+              <Badge key={d} className={dm.className} title={d}>
+                {dm.label}
+              </Badge>
+            );
+          })}
           <Badge
             className={
               result.verdict_source === 'batfish'

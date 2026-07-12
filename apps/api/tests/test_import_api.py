@@ -27,14 +27,14 @@ def test_import_ncm_archive_creates_snapshot_and_devices(client, workspace_id):
     snapshot_id = import_snapshot(client, workspace_id, "baseline", "May baseline")
 
     snap = client.get(f"/api/snapshots/{snapshot_id}").json()
-    assert snap["device_count"] == 4
+    assert snap["device_count"] == 5
     assert snap["analysis_status"] == "parsed"
     assert snap["completeness_score"] > 0.95
     assert snap["parse_error_count"] == 0
 
     devices = client.get(f"/api/snapshots/{snapshot_id}/devices").json()
     hostnames = [d["hostname"] for d in devices]
-    assert hostnames == ["ACCESS-SW-01", "CORE-RTR-01", "DIST-SW-01", "EDGE-FW-01"]
+    assert hostnames == ["ACCESS-SW-01", "CORE-RTR-01", "DIST-SW-01", "EDGE-FW-01", "LAB-RTR-01"]
 
     dist = next(d for d in devices if d["hostname"] == "DIST-SW-01")
     detail = client.get(f"/api/devices/{dist['id']}").json()
