@@ -1,0 +1,56 @@
+[project]
+name = "network-evidence-api"
+version = "0.1.0"
+description = "Network Evidence backend API (working name; see app/branding.py)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.8",
+    "pydantic-settings>=2.4",
+    "sqlalchemy>=2.0.30",
+    "alembic>=1.13",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+# Batfish integration is optional at runtime: the core application must work
+# without it (degraded path analysis). Installed in the Docker image.
+batfish = ["pybatfish>=2024.7.11"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.2",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.27",
+    "ruff>=0.5",
+    "mypy>=1.10",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+check_untyped_defs = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff.lint.per-file-ignores]
+# FastAPI's dependency-injection idiom uses Depends() in defaults by design.
+"app/routers/*" = ["B008"]
