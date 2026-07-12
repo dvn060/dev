@@ -2,8 +2,16 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# Corporate TLS-inspection proxies: drop your proxy's CA certificate(s) as
+# .crt files into apps/api/build-cas/ before building (kept out of git).
+# The directory ships empty; this layer is a no-op in the normal case.
+COPY build-cas/ /usr/local/share/ca-certificates/extra/
+RUN update-ca-certificates
+ENV PIP_CERT=/etc/ssl/certs/ca-certificates.crt \
+    REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+
 # Install the application with the Batfish integration extra.
-COPY pyproject.toml README.md* ./
+COPY pyproject.toml ./
 COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini ./

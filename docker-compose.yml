@@ -6,6 +6,7 @@
 services:
   web:
     build: ./apps/web
+    image: network-evidence-web
     ports:
       - "127.0.0.1:8080:80"
     depends_on:
@@ -13,6 +14,7 @@ services:
 
   api:
     build: ./apps/api
+    image: network-evidence-api
     ports:
       - "127.0.0.1:8000:8000"   # direct API access / OpenAPI docs at /docs
     environment:
@@ -27,8 +29,11 @@ services:
 
   # Batfish: the authoritative routing/ACL/forwarding analysis engine.
   # Runs entirely locally; see services/batfish/README.md.
+  # Batfish only publishes "latest" and "test-*" tags on Docker Hub; pin by
+  # digest (docker inspect --format '{{index .RepoDigests 0}}' batfish/allinone)
+  # if you need reproducibility.
   batfish:
-    image: batfish/allinone:2024.07.19.1913
+    image: batfish/allinone:latest
     ports:
       - "127.0.0.1:9996:9996"
     volumes:

@@ -22,3 +22,6 @@ data/
 
 # Env
 .env
+
+# Environment-specific build CAs (corporate proxies) — never commit
+apps/*/build-cas/*.crt
