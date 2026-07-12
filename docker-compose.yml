@@ -1,0 +1,39 @@
+# Network Evidence — local stack.
+# All ports bind to 127.0.0.1 only: nothing is reachable from the network.
+# Usage (Windows 11 + Docker Desktop):  docker compose up --build
+# Then open http://localhost:8080
+
+services:
+  web:
+    build: ./apps/web
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - api
+
+  api:
+    build: ./apps/api
+    ports:
+      - "127.0.0.1:8000:8000"   # direct API access / OpenAPI docs at /docs
+    environment:
+      NE_DATA_DIR: /data
+      NE_BATFISH_HOST: batfish
+      NE_BATFISH_PORT: "9996"
+      NE_LOG_LEVEL: ${NE_LOG_LEVEL:-INFO}
+    volumes:
+      - ne_data:/data
+    depends_on:
+      - batfish
+
+  # Batfish: the authoritative routing/ACL/forwarding analysis engine.
+  # Runs entirely locally; see services/batfish/README.md.
+  batfish:
+    image: batfish/allinone:2024.07.19.1913
+    ports:
+      - "127.0.0.1:9996:9996"
+    volumes:
+      - batfish_data:/data
+
+volumes:
+  ne_data:
+  batfish_data:
