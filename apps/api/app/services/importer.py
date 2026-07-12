@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import io
 import logging
+import re
 import zipfile
 from datetime import datetime
 
@@ -35,17 +36,42 @@ logger = logging.getLogger(__name__)
 
 MAX_ARCHIVE_MEMBERS = 5000
 MAX_MEMBER_BYTES = 20 * 1024 * 1024  # single config larger than this is not a config
+# Decompression-bomb guard: cumulative decompressed bytes across an archive.
+MAX_TOTAL_DECOMPRESSED_BYTES = 500 * 1024 * 1024
 
 
 class ImportError_(Exception):
-    """User-facing import failure."""
+    """User-facing import failure. Carries the audit-log entries collected
+    before the failure so they survive the transaction rollback."""
+
+    def __init__(self, message: str, log_entries: list[dict] | None = None):
+        super().__init__(message)
+        self.log_entries: list[dict] = log_entries or []
 
 
 def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+_CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def _sanitize_member_name(name: str) -> str:
+    """Make an attacker-controlled filename safe for logs, DB and UI:
+    strip control characters and cap the length."""
+    cleaned = _CONTROL_CHARS.sub("?", name)
+    return cleaned[:200] + "…" if len(cleaned) > 200 else cleaned
+
+
 def _decode(data: bytes) -> str:
+    """Decode config bytes across the encodings seen in real exports.
+
+    BOM-marked UTF-8/UTF-16 are honored explicitly (UTF-16 would otherwise
+    'succeed' as NUL-riddled latin-1 and then fail the config sniff)."""
+    if data.startswith(b"\xef\xbb\xbf"):
+        return data.decode("utf-8-sig", errors="replace")
+    if data.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return data.decode("utf-16", errors="replace")
     for encoding in ("utf-8", "latin-1"):
         try:
             return data.decode(encoding)
@@ -66,28 +92,50 @@ def collect_candidates(
                 raise ImportError_(
                     f"Archive has {len(members)} files; limit is {MAX_ARCHIVE_MEMBERS}."
                 )
+            total_decompressed = 0
             for member in members:
                 name = member.filename
+                safe_name = _sanitize_member_name(name)
                 # zip-slip guard: we never extract to disk, but reject anyway
-                if name.startswith("/") or ".." in name.replace("\\", "/").split("/"):
+                if name.startswith(("/", "\\")) or ":" in name.split("/")[0][:3] \
+                        or ".." in name.replace("\\", "/").split("/"):
                     log.append({"level": "warning",
-                                "message": f"Skipped suspicious archive path: {name}"})
+                                "message": f"Skipped suspicious archive path: {safe_name}"})
                     continue
                 ext = "." + name.rsplit(".", 1)[-1].lower() if "." in name else ""
                 if ext not in ncm.CONFIG_EXTENSIONS:
                     log.append({"level": "info",
-                                "message": f"Skipped non-config file: {name}"})
+                                "message": f"Skipped non-config file: {safe_name}"})
                     continue
                 if member.file_size > MAX_MEMBER_BYTES:
                     log.append({"level": "warning",
-                                "message": f"Skipped oversized file ({member.file_size} bytes): {name}"})
+                                "message": f"Skipped oversized file ({member.file_size} bytes): {safe_name}"})
                     continue
-                content = _decode(zf.read(member))
+                total_decompressed += member.file_size
+                if total_decompressed > MAX_TOTAL_DECOMPRESSED_BYTES:
+                    raise ImportError_(
+                        "Archive expands beyond the "
+                        f"{MAX_TOTAL_DECOMPRESSED_BYTES // (1024 * 1024)} MiB total limit; "
+                        "refusing to continue (possible decompression bomb)."
+                    )
+                raw = zf.read(member)
+                # Defense in depth: a lying local header cannot bypass the cap
+                # because ZipExtFile truncates at the declared size; verify the
+                # declared size was honest anyway.
+                if len(raw) > MAX_MEMBER_BYTES:
+                    log.append({"level": "warning",
+                                "message": f"Skipped oversized file: {safe_name}"})
+                    continue
+                if b"\x00" in raw[:1024] and not raw.startswith((b"\xff\xfe", b"\xfe\xff")):
+                    log.append({"level": "warning",
+                                "message": f"Skipped binary file: {safe_name}"})
+                    continue
+                content = _decode(raw)
                 if not ncm.looks_like_cisco_config(content):
                     log.append({"level": "warning",
-                                "message": f"Skipped '{name}': does not look like a Cisco configuration."})
+                                "message": f"Skipped '{safe_name}': does not look like a Cisco configuration."})
                     continue
-                hint, ctype, ts = ncm.parse_filename_metadata(name)
+                hint, ctype, ts = ncm.parse_filename_metadata(safe_name)
                 if ts is None:
                     dt = member.date_time
                     try:
@@ -97,21 +145,26 @@ def collect_candidates(
                     except ValueError:
                         ts = None
                 candidates.append(ncm.ConfigFileCandidate(
-                    relative_path=name, content=content,
+                    relative_path=safe_name, content=content,
                     device_name_hint=hint, config_type=ctype, timestamp=ts,
                 ))
         source_type = "ncm_archive" if _looks_like_ncm_layout(candidates) else "archive"
         return candidates, source_type
 
     # Single plain-text config
+    safe_filename = _sanitize_member_name(filename)
+    if b"\x00" in data[:1024] and not data.startswith((b"\xff\xfe", b"\xfe\xff")):
+        raise ImportError_(
+            f"'{safe_filename}' is a binary file, not a Cisco configuration or zip archive."
+        )
     content = _decode(data)
     if not ncm.looks_like_cisco_config(content):
         raise ImportError_(
-            f"'{filename}' does not look like a Cisco configuration or a zip archive."
+            f"'{safe_filename}' does not look like a Cisco configuration or a zip archive."
         )
-    hint, ctype, ts = ncm.parse_filename_metadata(filename)
+    hint, ctype, ts = ncm.parse_filename_metadata(safe_filename)
     return (
-        [ncm.ConfigFileCandidate(relative_path=filename, content=content,
+        [ncm.ConfigFileCandidate(relative_path=safe_filename, content=content,
                                  device_name_hint=hint, config_type=ctype, timestamp=ts)],
         "single_config",
     )
@@ -139,14 +192,15 @@ def run_import(
     import_record.file_hash = _sha256(data)
     db.flush()
 
-    candidates, source_type = collect_candidates(import_record.original_filename, data, log)
+    try:
+        candidates, source_type = collect_candidates(import_record.original_filename, data, log)
+    except ImportError_ as exc:
+        exc.log_entries = [*log, *exc.log_entries]
+        raise
     import_record.source_type = source_type
     if not candidates:
-        import_record.status = ImportStatus.failed.value
-        import_record.error_count += 1
-        log.append({"level": "error", "message": "No usable configuration files found."})
-        import_record.log = log
-        raise ImportError_("No usable configuration files found in the upload.")
+        raise ImportError_("No usable configuration files found in the upload.",
+                           log_entries=log)
 
     selected, selection_log = ncm.select_candidates(candidates)
     log.extend(selection_log)

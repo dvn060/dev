@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..db import get_db
-from ..models import Import, Snapshot, Workspace
+from ..models import Import, ImportStatus, Snapshot, Workspace
 from ..schemas import ImportAccepted, ImportDetailOut, ImportOut
 from ..services import jobs
 from ..services.importer import run_import
@@ -73,7 +73,26 @@ async def create_import(
     def work(session: Session) -> dict:
         record = session.get(Import, import_id)
         assert record is not None
-        snapshot = run_import(session, record, data, name, effective_at)
+        try:
+            snapshot = run_import(session, record, data, name, effective_at)
+        except Exception as exc:
+            # Roll back any partial snapshot/device rows, then persist the
+            # failure on the import record so nothing is left half-imported.
+            session.rollback()
+            record = session.get(Import, import_id)
+            assert record is not None
+            record.status = ImportStatus.failed.value
+            record.error_count = (record.error_count or 0) + 1
+            # ImportError_ carries the audit log collected before the failure
+            # (skip decisions etc.) so the rollback doesn't erase it.
+            pre_failure_log = getattr(exc, "log_entries", [])
+            record.log = [
+                *(record.log or []),
+                *pre_failure_log,
+                {"level": "error", "message": str(exc)},
+            ]
+            session.commit()
+            raise
         session.commit()
         return {
             "import_id": import_id,
