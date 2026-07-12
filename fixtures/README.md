@@ -44,9 +44,25 @@ Key addresses: user workstation `10.10.10.42` (VLAN 10), server APP-01
 
 ## Expected analysis results
 
-* Import of either archive: 4 devices, 100% completeness, 0 parse errors.
-* Path 10.10.10.42 → 10.10.20.50 tcp/443 on *baseline*: permitted (with
-  Batfish) via the `SERVERS-IN` permit at DIST-SW-01; without Batfish:
-  verdict `unknown` with that entry as inferred candidate evidence.
-* Compare baseline → changed with that flow: suspect #1 is the removed ACL
-  permit on DIST-SW-01, score 100; description/NTP changes rank nowhere.
+Import of either archive: 4 devices, 100% completeness, 0 parse errors.
+
+Batfish dispositions, as returned by the live engine (batfish/allinone
+`latest`, verified 2026-07-12; node names in traces are lowercased by
+Batfish):
+
+| Flow | Snapshot | Verdict | Disposition | Deciding ACL |
+| --- | --- | --- | --- | --- |
+| 10.10.10.42 → 10.10.20.50 tcp/443 | baseline | permitted | `DELIVERED_TO_SUBNET` | permitted by `SERVERS-IN` (DIST-SW-01, egress) |
+| 10.10.10.42 → 10.10.20.50 tcp/80 | baseline | permitted | `DELIVERED_TO_SUBNET` | permitted by `SERVERS-IN` |
+| 10.10.30.5 → 10.10.20.50 tcp/443 | baseline | denied | `DENIED_OUT` | denied by `SERVERS-IN` (voice VLAN never permitted) |
+| 10.10.10.42 → 203.0.113.9 tcp/443 | baseline | permitted | `EXITS_NETWORK` | permitted by `INSIDE-OUT` (EDGE-FW-01) |
+| 10.10.10.42 → 203.0.113.9 tcp/25 | baseline | denied | `DENIED_IN` | denied by `INSIDE-OUT` (ingress on EDGE Gi0/0) |
+| 10.10.10.42 → 10.10.20.50 tcp/443 | changed | denied | `DENIED_OUT` | denied by `SERVERS-IN` (the removed permit) |
+| 10.10.10.42 → 10.10.20.50 tcp/80 | changed | permitted | `DELIVERED_TO_SUBNET` | still permitted by `SERVERS-IN` |
+
+Without Batfish, every one of these returns verdict `unknown` with the
+relevant ACL entries as inferred candidate evidence — never a guessed
+verdict.
+
+Compare baseline → changed with the tcp/443 flow: suspect #1 is the removed
+ACL permit on DIST-SW-01, score 100; description/NTP changes rank nowhere.

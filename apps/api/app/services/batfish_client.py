@@ -151,8 +151,12 @@ def run_traceroute(
                 steps_out = []
                 for step in hop.steps:
                     detail = getattr(step, "detail", None)
+                    # Observed pybatfish behavior: steps are plain `Step` objects;
+                    # the *detail* object carries the typed class (e.g.
+                    # FilterStepDetail, RoutingStepDetail).
                     step_info: dict[str, Any] = {
-                        "type": type(step).__name__.replace("StepDetail", ""),
+                        "type": type(detail).__name__.replace("StepDetail", "")
+                        if detail is not None else "Step",
                         "action": getattr(step, "action", None),
                         "detail": str(detail) if detail is not None else "",
                     }

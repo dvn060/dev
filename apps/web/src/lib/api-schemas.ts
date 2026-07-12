@@ -241,7 +241,14 @@ export const PathResultSchema = z.object({
     .array(
       z.object({
         disposition: z.string(),
-        hops: z.array(z.object({ node: z.string(), steps: z.array(TraceStepSchema) })),
+        hops: z.array(
+          z.object({
+            node: z.string(),
+            device_id: z.string().optional(),
+            hostname: z.string().optional(),
+            steps: z.array(TraceStepSchema),
+          }),
+        ),
       }),
     )
     .optional(),

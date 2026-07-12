@@ -89,7 +89,8 @@ def _locate_endpoint(devices: list[Device], ip: str) -> list[dict]:
 
 
 def _acl_line_index(devices: list[Device]) -> dict[tuple[str, str], Acl]:
-    return {(d.hostname, a.name): a for d in devices for a in d.acls}
+    # Batfish lowercases hostnames in trace nodes; key by lowercase.
+    return {(d.hostname.lower(), a.name): a for d in devices for a in d.acls}
 
 
 def _entry_matches(entry, src_ip: str, dst_ip: str, protocol: str,
@@ -185,15 +186,18 @@ def _collect_candidate_evidence(
 def _map_trace_evidence(traces: list[dict], devices: list[Device]) -> list[dict]:
     """Attach configuration-line evidence to Batfish trace steps."""
     acl_index = _acl_line_index(devices)
-    device_by_hostname = {d.hostname: d for d in devices}
+    device_by_hostname = {d.hostname.lower(): d for d in devices}
     for trace in traces:
         for hop in trace["hops"]:
             node = hop["node"]
-            device = device_by_hostname.get(node)
+            device = device_by_hostname.get(node.lower())
+            if device:
+                hop["device_id"] = device.id
+                hop["hostname"] = device.hostname  # original casing for display
             for step in hop["steps"]:
                 acl_name = step.get("acl_name")
                 if acl_name and device:
-                    acl = acl_index.get((device.hostname, acl_name))
+                    acl = acl_index.get((device.hostname.lower(), acl_name))
                     if acl:
                         step["evidence"] = {
                             "device_id": device.id,
