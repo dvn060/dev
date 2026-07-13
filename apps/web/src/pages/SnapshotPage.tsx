@@ -9,6 +9,9 @@ import { completenessTone } from '../lib/confidence';
 const TopologyView = lazy(() =>
   import('../components/TopologyView').then((m) => ({ default: m.TopologyView })),
 );
+const FindingsView = lazy(() =>
+  import('../components/FindingsView').then((m) => ({ default: m.FindingsView })),
+);
 import {
   Badge,
   Card,
@@ -80,6 +83,7 @@ export function SnapshotPage() {
       <Tabs
         tabs={[
           { id: 'devices', label: 'Devices' },
+          { id: 'findings', label: 'Findings' },
           { id: 'topology', label: 'Topology' },
           { id: 'search', label: 'Config search' },
         ]}
@@ -136,6 +140,12 @@ export function SnapshotPage() {
             </Table>
           )}
         </Card>
+      )}
+
+      {tab === 'findings' && (
+        <Suspense fallback={<Spinner label="Loading findings…" />}>
+          <FindingsView snapshotId={snapshotId} />
+        </Suspense>
       )}
 
       {tab === 'topology' && (

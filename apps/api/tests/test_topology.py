@@ -43,7 +43,11 @@ def test_topology_tiers(client, workspace_id):
 def test_shutdown_interfaces_do_not_create_edges(client, workspace_id):
     snapshot_id = import_snapshot(client, workspace_id, "baseline", "topo2")
     topo = client.get(f"/api/snapshots/{snapshot_id}/topology").json()
-    # CORE Gi0/3 is shutdown and has no IP; ensure no edge references it
+    # CORE Gi0/3 is shutdown and has no IP; ensure no edge references it.
+    # (LAB-RTR-01 also has a Gi0/3, which is up and legitimately creates edges.)
     assert not any(
-        e["data"].get("interface") == "GigabitEthernet0/3" for e in topo["edges"]
+        e["data"].get("interface") == "GigabitEthernet0/3"
+        and any(ev.get("hostname") == "CORE-RTR-01"
+                for ev in e["data"].get("evidence", []))
+        for e in topo["edges"]
     )

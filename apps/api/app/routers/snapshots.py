@@ -15,6 +15,7 @@ from ..schemas import (
 )
 from ..services.batfish_client import batfish_status, run_differential_reachability
 from ..services.diff import compare_snapshots, rank_suspects
+from ..services.findings import compute_findings
 from ..services.pathfinder import analyze_path
 from ..services.report import render_snapshot_report
 from ..services.topology import build_topology
@@ -81,6 +82,17 @@ def list_devices(snapshot: Snapshot = Depends(get_snapshot), db: Session = Depen
 @router.get("/snapshots/{snapshot_id}/topology")
 def snapshot_topology(snapshot: Snapshot = Depends(get_snapshot), db: Session = Depends(get_db)):
     return build_topology(db, snapshot.id)
+
+
+@router.get("/snapshots/{snapshot_id}/findings")
+def snapshot_findings(
+    batfish: bool = True,
+    snapshot: Snapshot = Depends(get_snapshot),
+    db: Session = Depends(get_db),
+):
+    """Deterministic, evidence-backed findings for this snapshot. Set
+    batfish=false to skip consulting the analysis engine."""
+    return compute_findings(db, snapshot, include_batfish=batfish)
 
 
 @router.get("/snapshots/{snapshot_id}/report")

@@ -339,6 +339,36 @@ export const DifferentialResultSchema = z.object({
 });
 export type DifferentialResult = z.infer<typeof DifferentialResultSchema>;
 
+export const FindingSchema = z.object({
+  id: z.string(),
+  kind: z.string(),
+  severity: z.enum(['high', 'medium', 'low', 'info']),
+  category: z.string(),
+  title: z.string(),
+  explanation: z.string(),
+  confidence: z.string(),
+  affected: z.array(z.object({ device_id: z.string(), hostname: z.string() })),
+  evidence: z.array(
+    z.object({
+      device_id: z.string(),
+      hostname: z.string(),
+      lines: z.array(z.number()),
+    }),
+  ),
+  data: z.record(z.unknown()),
+});
+export type Finding = z.infer<typeof FindingSchema>;
+
+export const FindingsResultSchema = z.object({
+  snapshot_id: z.string(),
+  batfish: z
+    .object({ available: z.boolean(), detail: z.string(), consulted: z.boolean() })
+    .passthrough(),
+  counts: z.record(z.number()),
+  findings: z.array(FindingSchema),
+});
+export type FindingsResult = z.infer<typeof FindingsResultSchema>;
+
 export const SearchResultSchema = z.object({
   query: z.string(),
   truncated: z.boolean(),

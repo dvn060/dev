@@ -10,6 +10,7 @@ import {
   DeviceSummarySchema,
   DifferentialResultSchema,
   DiffResultSchema,
+  FindingsResultSchema,
   HealthSchema,
   ImportDetailSchema,
   ImportRecordSchema,
@@ -106,6 +107,9 @@ export const api = {
 
   getTopology: (snapshotId: string) =>
     request(TopologySchema, `/api/snapshots/${snapshotId}/topology`),
+
+  getFindings: (snapshotId: string) =>
+    request(FindingsResultSchema, `/api/snapshots/${snapshotId}/findings`),
 
   search: (snapshotId: string, q: string) =>
     request(

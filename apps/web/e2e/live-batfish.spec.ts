@@ -85,10 +85,31 @@ test('distinct dispositions, differential reachability, redaction', async ({ pag
   // Heuristic is present but labeled as the fallback
   await expect(page.getByText(/temporal correlation only/)).toBeVisible();
 
-  // 8. Redacted config viewer with explicit reveal
+  // 8. Findings tab: >=5 distinct finding kinds, engine consulted, and
+  //    evidence click-through to the exact config lines
   await page.getByRole('link', { name: 'Snapshots' }).click();
   await page.getByRole('link', { name: 'baseline', exact: true }).click();
   await expect(page.getByText('5 devices')).toBeVisible();
+  await page.getByRole('button', { name: 'Findings' }).click();
+  await expect(page.getByText('Analysis engine consulted')).toBeVisible({ timeout: 120_000 });
+  for (const kind of ['duplicate_ip', 'acl_undefined', 'overlapping_subnets',
+                      'trunk_all_vlans', 'acl_unused', 'stale_snapshot']) {
+    await expect(page.getByTestId(`finding-${kind}`)).toBeVisible();
+  }
+  // Hygiene findings must say what they are, not masquerade as security
+  await expect(page.getByTestId('finding-acl_unused'))
+    .toContainText('not a security finding');
+  // Evidence click-through: duplicate IP -> LAB-RTR-01 config, lines highlighted
+  await page
+    .getByTestId('finding-duplicate_ip')
+    .getByRole('link', { name: /LAB-RTR-01/ })
+    .click();
+  await expect(page).toHaveURL(/\/devices\/.+\/config\?lines=/);
+  await expect(page.getByText('10.255.0.1 255.255.255.255').first()).toBeVisible();
+  await page.goBack();
+
+  // 9. Redacted config viewer with explicit reveal
+  await page.getByRole('button', { name: 'Devices' }).click();
   await page.getByRole('link', { name: 'DIST-SW-01' }).click();
   await page.getByRole('button', { name: 'View configuration' }).click();
   await expect(page.getByText(/secret values? redacted/)).toBeVisible();
