@@ -54,6 +54,9 @@ class ConfigFileCandidate:
     device_name_hint: str | None = None
     config_type: str = "unknown"  # running | startup | baseline | unknown
     timestamp: datetime | None = None
+    # "filename" (trustworthy, from NCM naming) or "zip_mtime" (weak fallback,
+    # used for duplicate selection but never for snapshot grouping)
+    timestamp_source: str | None = None
     notes: list[str] = field(default_factory=list)
 
 

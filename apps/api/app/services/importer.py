@@ -136,17 +136,19 @@ def collect_candidates(
                                 "message": f"Skipped '{safe_name}': does not look like a Cisco configuration."})
                     continue
                 hint, ctype, ts = ncm.parse_filename_metadata(safe_name)
+                ts_source = "filename" if ts else None
                 if ts is None:
                     dt = member.date_time
                     try:
-                        ts = datetime(*dt).replace(tzinfo=None)
                         from datetime import UTC
-                        ts = ts.replace(tzinfo=UTC)
+                        ts = datetime(*dt).replace(tzinfo=UTC)
+                        ts_source = "zip_mtime"
                     except ValueError:
                         ts = None
                 candidates.append(ncm.ConfigFileCandidate(
                     relative_path=safe_name, content=content,
                     device_name_hint=hint, config_type=ctype, timestamp=ts,
+                    timestamp_source=ts_source,
                 ))
         source_type = "ncm_archive" if _looks_like_ncm_layout(candidates) else "archive"
         return candidates, source_type
@@ -165,7 +167,8 @@ def collect_candidates(
     hint, ctype, ts = ncm.parse_filename_metadata(safe_filename)
     return (
         [ncm.ConfigFileCandidate(relative_path=safe_filename, content=content,
-                                 device_name_hint=hint, config_type=ctype, timestamp=ts)],
+                                 device_name_hint=hint, config_type=ctype, timestamp=ts,
+                                 timestamp_source="filename" if ts else None)],
         "single_config",
     )
 
@@ -198,6 +201,20 @@ def run_import(
         exc.log_entries = [*log, *exc.log_entries]
         raise
     import_record.source_type = source_type
+    return process_candidates(db, import_record, candidates, snapshot_name,
+                              effective_at=effective_at, log=log)
+
+
+def process_candidates(
+    db: Session,
+    import_record: Import,
+    candidates: list[ncm.ConfigFileCandidate],
+    snapshot_name: str,
+    effective_at: datetime | None = None,
+    log: list[dict] | None = None,
+) -> Snapshot:
+    """Turn a (possibly user-filtered) candidate list into a snapshot."""
+    log = list(log or import_record.log or [])
     if not candidates:
         raise ImportError_("No usable configuration files found in the upload.",
                            log_entries=log)

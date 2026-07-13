@@ -23,13 +23,15 @@ test('full investigation workflow', async ({ page }) => {
   await page.getByRole('link', { name: 'Imports' }).click();
   await page.setInputFiles('input[type=file]', path.join(FIXTURES, 'ncm-archive-baseline.zip'));
   await page.getByPlaceholder('e.g. May 2024 baseline').fill('Baseline');
-  await page.getByRole('button', { name: 'Import' }).click();
+  await page.getByRole('button', { name: 'Preview import' }).click();
+  await page.getByRole('button', { name: 'Confirm import' }).click();
   await expect(page.getByText(/completed/).first()).toBeVisible({ timeout: 15_000 });
 
   // Import the changed archive
   await page.setInputFiles('input[type=file]', path.join(FIXTURES, 'ncm-archive-changed.zip'));
   await page.getByPlaceholder('e.g. May 2024 baseline').fill('Changed');
-  await page.getByRole('button', { name: 'Import' }).click();
+  await page.getByRole('button', { name: 'Preview import' }).click();
+  await page.getByRole('button', { name: 'Confirm import' }).click();
   await expect(page.getByText(/completed/).nth(1)).toBeVisible({ timeout: 15_000 });
 
   // Snapshot shows 5 devices; open a device and its evidence

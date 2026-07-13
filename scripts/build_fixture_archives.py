@@ -47,10 +47,33 @@ def build(snapshot: str, stamp: str) -> Path:
     return out_path
 
 
+def build_ambiguous() -> Path:
+    """Archive spanning two export runs plus one undated file — exercises the
+    import wizard's grouping-correction step."""
+    src = CISCO / "baseline"
+    out_path = OUT / "ncm-archive-ambiguous.zip"
+    stamps = {
+        "CORE-RTR-01": "2024-05-01_020000",
+        "DIST-SW-01": "2024-05-01_020000",
+        "ACCESS-SW-01": "2024-06-05_020000",
+        "EDGE-FW-01": "2024-06-05_020000",
+    }
+    with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for device, stamp in stamps.items():
+            content = (src / f"{device}.cfg").read_text()
+            zf.writestr(f"{device}/{device}-Running-{stamp}.cfg", content)
+        # undated flat file: the wizard must let the user place it
+        zf.writestr("LAB-RTR-01.cfg", (src / "LAB-RTR-01.cfg").read_text())
+        zf.writestr("readme.txt", "Mixed export runs (fixture). Not a config.\n")
+    return out_path
+
+
 def main() -> None:
     for snapshot, stamp in SNAPSHOTS.items():
         path = build(snapshot, stamp)
         print(f"wrote {path.relative_to(ROOT)}")
+    path = build_ambiguous()
+    print(f"wrote {path.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

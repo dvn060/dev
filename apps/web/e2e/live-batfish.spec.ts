@@ -21,7 +21,9 @@ const WORKSPACE = `Live E2E ${Date.now()}`;
 async function importArchive(page: Page, file: string, name: string, position: number) {
   await page.setInputFiles('input[type=file]', path.join(FIXTURES, file));
   await page.getByPlaceholder('e.g. May 2024 baseline').fill(name);
-  await page.getByRole('button', { name: 'Import' }).click();
+  await page.getByRole('button', { name: 'Preview import' }).click();
+  await expect(page.getByTestId('import-wizard')).toBeVisible({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Confirm import' }).click();
   await expect(page.getByText(/completed/).nth(position)).toBeVisible({ timeout: 30_000 });
 }
 

@@ -24,6 +24,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -272,6 +273,24 @@ class AclEntry(Base):
     line_number: Mapped[int] = mapped_column(Integer)
 
     acl: Mapped[Acl] = relationship(back_populates="entries")
+
+
+class StagedImport(Base):
+    """An uploaded file held for user review before committing (the import
+    wizard's correction step). Bytes never touch disk; stale rows are swept
+    on startup."""
+
+    __tablename__ = "staged_imports"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    workspace_id: Mapped[str] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    original_filename: Mapped[str] = mapped_column(String(500))
+    data: Mapped[bytes] = mapped_column(LargeBinary)
+    source_type: Mapped[str] = mapped_column(String(50), default="pending")
+    proposal: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 class Job(Base):

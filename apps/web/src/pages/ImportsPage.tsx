@@ -1,8 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Upload } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import { ImportWizard } from '../components/ImportWizard';
 import {
   Badge,
   Button,
@@ -10,8 +10,6 @@ import {
   CardHeader,
   EmptyState,
   ErrorNote,
-  Input,
-  Label,
   Spinner,
   Table,
   Td,
@@ -28,9 +26,6 @@ const STATUS_STYLE: Record<string, string> = {
 
 export function ImportsPage() {
   const { workspaceId = '' } = useParams();
-  const queryClient = useQueryClient();
-  const fileInput = useRef<HTMLInputElement>(null);
-  const [snapshotName, setSnapshotName] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const imports = useQuery({
@@ -42,17 +37,6 @@ export function ImportsPage() {
         : false,
   });
 
-  const upload = useMutation({
-    mutationFn: (file: File) =>
-      api.uploadImport(workspaceId, file, snapshotName.trim() || undefined),
-    onSuccess: () => {
-      setSnapshotName('');
-      if (fileInput.current) fileInput.current.value = '';
-      void queryClient.invalidateQueries({ queryKey: ['imports', workspaceId] });
-      void queryClient.invalidateQueries({ queryKey: ['snapshots', workspaceId] });
-    },
-  });
-
   const detail = useQuery({
     queryKey: ['import', expanded],
     queryFn: () => api.getImport(expanded!),
@@ -61,43 +45,7 @@ export function ImportsPage() {
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader
-          title="Import configurations"
-          subtitle="Upload a single Cisco config (.cfg/.txt) or a zip archive exported from SolarWinds NCM. Files are processed locally; nothing leaves this machine."
-        />
-        <form
-          className="flex flex-wrap items-end gap-3 p-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const file = fileInput.current?.files?.[0];
-            if (file) upload.mutate(file);
-          }}
-        >
-          <div>
-            <Label>File (.cfg, .txt, .conf or .zip)</Label>
-            <input
-              ref={fileInput}
-              type="file"
-              accept=".cfg,.txt,.conf,.config,.zip"
-              required
-              className="block text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-slate-700"
-            />
-          </div>
-          <div className="w-64">
-            <Label>Snapshot name (optional)</Label>
-            <Input
-              value={snapshotName}
-              onChange={(e) => setSnapshotName(e.target.value)}
-              placeholder="e.g. May 2024 baseline"
-            />
-          </div>
-          <Button type="submit" disabled={upload.isPending}>
-            <Upload size={14} aria-hidden /> Import
-          </Button>
-          {upload.isError && <ErrorNote error={upload.error} />}
-        </form>
-      </Card>
+      <ImportWizard workspaceId={workspaceId} />
 
       <Card>
         <CardHeader title="Import history" subtitle="Every decision made during an import is recorded in its log." />
