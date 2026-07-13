@@ -245,6 +245,16 @@ def run_import(
                                    f"using filename-derived name '{hostname}'."})
             total_warnings += 1
 
+        if parsed.os_family == "nx-os":
+            log.append({
+                "level": "info",
+                "message": (
+                    f"'{hostname}' is an NX-OS device. NX-OS omits default settings from "
+                    "'show running-config'; for the most complete analysis, export backups "
+                    "with 'show running-config all' (in SolarWinds NCM: a config type that "
+                    "captures the full running config)."
+                ),
+            })
         parse_status = "ok"
         if parsed.completeness < 0.5:
             parse_status = "partial"

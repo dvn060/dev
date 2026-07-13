@@ -310,6 +310,12 @@ def _parse_acl_address(tokens: list[str], i: int) -> tuple[AclAddress, int]:
         return AclAddress(kind="any"), i + 1
     if tok == "host":
         return AclAddress(kind="host", ip=tokens[i + 1]), i + 2
+    # NX-OS prefix notation: A.B.C.D/len
+    if "/" in tok:
+        net = ipaddress.ip_network(tok, strict=False)  # raises if not a prefix
+        return AclAddress(
+            kind="wildcard", ip=str(net.network_address), wildcard=str(net.hostmask)
+        ), i + 1
     # A.B.C.D wildcard  — wildcard may be omitted in standard ACLs (host match)
     ipaddress.ip_address(tokens[i])  # raises if not an address
     if i + 1 < len(tokens):
@@ -441,6 +447,36 @@ class CiscoConfigParser:
                 i += 1
                 continue
 
+            # ---- NX-OS vrf context blocks: consume; routes inside are recorded
+            # with their VRF (not leaked into the global table)
+            m = re.match(r"^vrf context\s+(\S+)$", stripped)
+            if m:
+                vrf_name = m.group(1)
+                parsed += 1
+                i += 1
+                while i < n and (lines[i].startswith(" ") or lines[i].strip() == "!"):
+                    sub = lines[i].strip()
+                    subno = i + 1
+                    if sub and sub != "!":
+                        significant += 1
+                        rm = re.match(
+                            r"^ip route\s+(\d+\.\d+\.\d+\.\d+/\d+)\s+(\S+)$", sub
+                        )
+                        if rm:
+                            try:
+                                prefix = str(ipaddress.ip_network(rm.group(1), strict=False))
+                                device.static_routes.append(ParsedStaticRoute(
+                                    prefix=prefix, next_hop_ip=rm.group(2), vrf=vrf_name,
+                                    evidence_lines=[subno],
+                                ))
+                                parsed += 1
+                            except ValueError:
+                                device.unparsed_lines.append(subno)
+                        else:
+                            parsed += 1  # other vrf-context sub-commands are benign
+                    i += 1
+                continue
+
             # ---- ip routing toggle (benign for inventory; Batfish models it)
             if stripped in ("ip routing", "no ip routing"):
                 parsed += 1
@@ -459,6 +495,29 @@ class CiscoConfigParser:
                 i += 1
                 continue
 
+            # ---- NX-OS style static routes: ip route A.B.C.D/len next-hop
+            m = re.match(
+                r"^ip route\s+(\d+\.\d+\.\d+\.\d+/\d+)\s+(\S+)(?:\s+(\d+))?$", stripped
+            )
+            if m:
+                try:
+                    prefix = str(ipaddress.ip_network(m.group(1), strict=False))
+                except ValueError:
+                    device.unparsed_lines.append(lineno)
+                    i += 1
+                    continue
+                route = ParsedStaticRoute(prefix=prefix, evidence_lines=[lineno])
+                if re.match(r"^\d+\.\d+\.\d+\.\d+$", m.group(2)):
+                    route.next_hop_ip = m.group(2)
+                else:
+                    route.next_hop_interface = canonical_interface_name(m.group(2))
+                if m.group(3):
+                    route.admin_distance = int(m.group(3))
+                device.static_routes.append(route)
+                parsed += 1
+                i += 1
+                continue
+
             # ---- numbered ACLs (classic syntax, one line per entry)
             m = re.match(r"^access-list\s+(\d+)\s+(.*)$", stripped)
             if m:
@@ -467,10 +526,13 @@ class CiscoConfigParser:
                 i += 1
                 continue
 
-            # ---- named ACLs (block syntax)
-            m = re.match(r"^ip access-list\s+(standard|extended)\s+(\S+)$", stripped)
-            if m:
-                acl = ParsedAcl(name=m.group(2), kind=m.group(1), evidence_lines=[lineno])
+            # ---- named ACLs (block syntax). IOS: "ip access-list standard|extended
+            # NAME"; NX-OS omits the kind keyword and uses extended-form entries.
+            m = re.match(r"^ip access-list\s+(?:(standard|extended)\s+)?(\S+)$", stripped)
+            if m and m.group(2).lower() not in ("standard", "extended"):
+                acl = ParsedAcl(
+                    name=m.group(2), kind=m.group(1) or "extended", evidence_lines=[lineno]
+                )
                 parsed += 1
                 i += 1
                 while i < n and (lines[i].startswith(" ") or lines[i].strip() == "!"):

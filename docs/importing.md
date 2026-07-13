@@ -51,6 +51,17 @@ Rules applied (each decision is written to the import log):
 * **Warnings** never block an import; **errors** (per file) mean that file
   contributed no device.
 
+## NX-OS advisory
+
+NX-OS omits default settings from plain `show running-config`. For the most
+complete analysis, export NX-OS backups with **`show running-config all`**
+(in SolarWinds NCM, use a config type that captures the full running
+config). The importer prints this advisory in the import log whenever an
+NX-OS device is detected. Inventory parsing covers NX-OS basics (VLANs,
+SVIs, port-channels, prefix-notation ACLs and routes, `vrf context` routes,
+mgmt0); HSRP blocks are surfaced as parser warnings and are analyzed by
+Batfish, not by the inventory parser.
+
 ## Limits
 
 * Upload ≤ 200 MiB (configurable), ≤ 5 000 files per archive, ≤ 20 MiB per

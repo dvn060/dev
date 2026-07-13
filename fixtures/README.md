@@ -44,6 +44,14 @@ Key addresses: user workstation `10.10.10.42` (VLAN 10), server APP-01
   permit re-added on 2024-07-01); the decoy changes remain.
 * `cisco/secrets-demo/` — a config stuffed with FAKE credentials for the
   secret-detection and redaction tests. Never used in the main lab.
+* `cisco/nxos/` — NXOS-CORE-01, a standalone NX-OS core (VLANs 110/120,
+  SVIs with HSRP, port-channel10 with two members, mgmt0 in the management
+  VRF, prefix-notation ACL APP-TO-DB applied ingress on Vlan110). Imported
+  as its own snapshot (`ncm-archive-nxos.zip`). Verified live 2026-07-12:
+  Batfish fileParseStatus `PASSED` / format `CISCO_NX`, zero initIssues;
+  10.20.110.55 → 10.20.120.60 tcp/1433 = permitted `DELIVERED_TO_SUBNET`
+  (PERMITTED by APP-TO-DB, evidence-linked); tcp/1434 = denied `DENIED_IN`.
+  Inventory parses at ~91% with HSRP lines surfaced as warnings.
 * `ncm-archives/` — the same states packaged as SolarWinds-NCM-style zip
   archives (per-device folders, timestamped `-Running-` filenames; the
   baseline archive also carries an older running copy, a startup copy and a
