@@ -9,7 +9,7 @@ NXOS_CFG = FIXTURES / "cisco" / "nxos" / "NXOS-CORE-01.cfg"
 
 
 def test_nxos_inventory_parses():
-    d = parse_cisco_config(NXOS_CFG.read_text())
+    d = parse_cisco_config(NXOS_CFG.read_text(encoding="utf-8"))
     assert d.hostname == "NXOS-CORE-01"
     assert d.os_family == "nx-os"
     assert d.management_ip == "10.20.99.10"  # mgmt0 preferred
@@ -30,7 +30,7 @@ def test_nxos_inventory_parses():
 
 
 def test_nxos_acl_prefix_notation_and_vrf_routes():
-    d = parse_cisco_config(NXOS_CFG.read_text())
+    d = parse_cisco_config(NXOS_CFG.read_text(encoding="utf-8"))
 
     acl = next(a for a in d.acls if a.name == "APP-TO-DB")
     e = acl.entries[0]
@@ -46,7 +46,7 @@ def test_nxos_acl_prefix_notation_and_vrf_routes():
 
 
 def test_nxos_unsupported_syntax_surfaces_as_warnings():
-    d = parse_cisco_config(NXOS_CFG.read_text())
+    d = parse_cisco_config(NXOS_CFG.read_text(encoding="utf-8"))
     # HSRP blocks are not modeled by the inventory parser: warnings, not silence
     hsrp_warnings = [w for w in d.warnings if "hsrp" in w.message.lower()
                      or w.message.strip().endswith(("110", "120", "10.20.110.1", "10.20.120.1"))]

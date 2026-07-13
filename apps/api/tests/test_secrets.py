@@ -31,7 +31,7 @@ PLANTED_SECRETS = [
 
 
 def test_detector_finds_all_planted_secrets():
-    text = SECRETS_CFG.read_text()
+    text = SECRETS_CFG.read_text(encoding="utf-8")
     matches = detect_secrets(text)
     redacted_all = "\n".join(m.redacted_line for m in matches)
     kinds = {m.kind for m in matches}
@@ -106,7 +106,7 @@ def test_explicit_unredacted_viewer_still_works(client, workspace_id):
 
 def test_diff_output_is_redacted(client, workspace_id):
     """A secret rotation between snapshots must not leak either value."""
-    old = SECRETS_CFG.read_text()
+    old = SECRETS_CFG.read_text(encoding="utf-8")
     new = old.replace("FAKEROCOMMUNITY", "ROTATEDCOMMUNITY99")
 
     for name, content in (("s1", old), ("s2", new)):

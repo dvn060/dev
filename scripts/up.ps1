@@ -5,9 +5,9 @@ param([switch]$Detach)
 $root = Split-Path -Parent $PSScriptRoot
 Push-Location $root
 try {
-    $args = @("compose", "up", "--build")
-    if ($Detach) { $args += "-d" }
-    docker @args
+    $composeArgs = @("compose", "up", "--build")
+    if ($Detach) { $composeArgs += "-d" }
+    docker @composeArgs
     if ($Detach) {
         Write-Host "Stack started. Open http://localhost:8080" -ForegroundColor Green
     }

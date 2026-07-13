@@ -1,0 +1,13 @@
+# Normalize line endings so behavior is identical on Windows checkouts.
+* text=auto
+
+# Fixture configs must stay byte-stable (hashes, archive rebuilds) — LF always.
+*.cfg text eol=lf
+fixtures/** text eol=lf
+
+# PowerShell reads both, but CRLF is native on Windows.
+*.ps1 text eol=crlf
+
+# Binary fixtures
+*.zip binary
+*.png binary

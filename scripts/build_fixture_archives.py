@@ -34,7 +34,7 @@ def build(snapshot: str, stamp: str) -> Path:
     with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for cfg in sorted(src.glob("*.cfg")):
             device = cfg.stem
-            content = cfg.read_text()
+            content = cfg.read_text(encoding="utf-8")
             zf.writestr(f"{device}/{device}-Running-{stamp}.cfg", content)
             if snapshot == "baseline" and device == "CORE-RTR-01":
                 # Older running copy: importer must pick the newest one.
@@ -60,10 +60,10 @@ def build_ambiguous() -> Path:
     }
     with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for device, stamp in stamps.items():
-            content = (src / f"{device}.cfg").read_text()
+            content = (src / f"{device}.cfg").read_text(encoding="utf-8")
             zf.writestr(f"{device}/{device}-Running-{stamp}.cfg", content)
         # undated flat file: the wizard must let the user place it
-        zf.writestr("LAB-RTR-01.cfg", (src / "LAB-RTR-01.cfg").read_text())
+        zf.writestr("LAB-RTR-01.cfg", (src / "LAB-RTR-01.cfg").read_text(encoding="utf-8"))
         zf.writestr("readme.txt", "Mixed export runs (fixture). Not a config.\n")
     return out_path
 

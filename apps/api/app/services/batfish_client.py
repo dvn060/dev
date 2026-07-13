@@ -80,7 +80,7 @@ def _materialize_snapshot(db: Session, snapshot: Snapshot, dest: Path) -> int:
         # No dots in the allowed set: a hostname like "../../x" must not be
         # able to influence the written path.
         safe_name = re.sub(r"[^A-Za-z0-9_-]", "_", device.hostname)
-        (configs_dir / f"{safe_name}.cfg").write_text(device.raw_config)
+        (configs_dir / f"{safe_name}.cfg").write_text(device.raw_config, encoding="utf-8")
     return len(devices)
 
 

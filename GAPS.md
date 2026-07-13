@@ -1,6 +1,6 @@
 # Gap audit — specification vs. verified reality
 
-Audited 2026-07-12 against the original product specification. **Status
+Audited 2026-07-12 (updated same day, night session) against the original product specification. **Status
 reflects only what was verified in this session** (live Docker stack, live
 Batfish, test runs). "Working" claims below each cite how they were
 verified; anything not re-verified is marked accordingly.

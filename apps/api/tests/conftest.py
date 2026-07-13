@@ -28,7 +28,7 @@ def client(tmp_path, monkeypatch):
 
 
 def fixture_config(snapshot: str, name: str) -> str:
-    return (FIXTURES / "cisco" / snapshot / name).read_text()
+    return (FIXTURES / "cisco" / snapshot / name).read_text(encoding="utf-8")
 
 
 def build_archive_bytes(snapshot: str, stamp: str = "2024-05-01_020000") -> bytes:
@@ -38,7 +38,7 @@ def build_archive_bytes(snapshot: str, stamp: str = "2024-05-01_020000") -> byte
     with zipfile.ZipFile(buf, "w") as zf:
         for cfg in sorted(src.glob("*.cfg")):
             device = cfg.stem
-            zf.writestr(f"{device}/{device}-Running-{stamp}.cfg", cfg.read_text())
+            zf.writestr(f"{device}/{device}-Running-{stamp}.cfg", cfg.read_text(encoding="utf-8"))
     return buf.getvalue()
 
 
