@@ -79,6 +79,44 @@ def submit_job(db: Session, kind: str, work: Callable[[Session], dict]) -> Job:
     return job
 
 
+def recover_interrupted(session: Session) -> int:
+    """Startup sweep: any job/import still marked pending/running was
+    interrupted by a shutdown or crash. Their transactions never committed
+    (no partial snapshots survive), but the status rows would otherwise show
+    'running' forever. Mark them failed with an honest message."""
+    from ..models import Import, ImportStatus, StagedImport
+    from ..models import utcnow as now
+
+    message = "Interrupted by application shutdown or crash before completing."
+    count = 0
+    for job in session.query(Job).filter(Job.status.in_(("pending", "running"))).all():
+        job.status = "failed"
+        job.error = message
+        job.finished_at = now()
+        count += 1
+    for record in session.query(Import).filter(
+        Import.status.in_((ImportStatus.pending.value, ImportStatus.running.value))
+    ).all():
+        record.status = ImportStatus.failed.value
+        record.error_count = (record.error_count or 0) + 1
+        record.log = [*(record.log or []), {"level": "error", "message": message}]
+        count += 1
+    # Staged (unconfirmed) uploads older than a day are abandoned wizards.
+    from datetime import UTC, datetime, timedelta
+    cutoff = datetime.now(UTC) - timedelta(days=1)
+    for staged in session.query(StagedImport).all():
+        created = staged.created_at
+        if created.tzinfo is None:
+            created = created.replace(tzinfo=UTC)
+        if created < cutoff:
+            session.delete(staged)
+    session.commit()
+    if count:
+        logger.warning("Startup recovery: marked %d interrupted job(s)/import(s) as failed",
+                       count)
+    return count
+
+
 def shutdown() -> None:
     global _executor
     with _lock:

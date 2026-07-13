@@ -172,7 +172,9 @@ async def preview_import(
         proposal=proposal,
     )
     db.add(staged)
-    db.flush()
+    # Explicit commit: the client may confirm immediately, and dependency
+    # teardown commits only after the response is sent.
+    db.commit()
     return {"staged_import_id": staged.id, **proposal}
 
 

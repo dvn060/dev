@@ -28,7 +28,9 @@ def create_workspace(payload: WorkspaceCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=409, detail="A workspace with that name already exists")
     workspace = Workspace(name=payload.name, description=payload.description)
     db.add(workspace)
-    db.flush()
+    # Explicit commit: dependency teardown commits only AFTER the response is
+    # sent, so a client using the new id immediately could race it.
+    db.commit()
     return workspace
 
 
@@ -47,10 +49,11 @@ def update_workspace(
         workspace.name = payload.name
     if payload.description is not None:
         workspace.description = payload.description
-    db.flush()
+    db.commit()
     return workspace
 
 
 @router.delete("/{workspace_id}", status_code=204)
 def delete_workspace(workspace: Workspace = Depends(get_workspace), db: Session = Depends(get_db)):
     db.delete(workspace)
+    db.commit()

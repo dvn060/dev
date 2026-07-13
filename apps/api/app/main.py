@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import branding
 from .config import settings
-from .db import get_engine
+from .db import get_engine, get_sessionmaker
 from .logging_setup import setup_logging
 from .models import Base
 from .routers import devices, imports, misc, snapshots, workspaces
@@ -20,6 +20,12 @@ async def lifespan(app: FastAPI):
     # Alembic owns schema migration in deployments; create_all covers fresh
     # databases (first run, tests) and is a no-op when tables exist.
     Base.metadata.create_all(get_engine())
+    # Anything still marked running was interrupted by the previous shutdown.
+    session = get_sessionmaker()()
+    try:
+        jobs.recover_interrupted(session)
+    finally:
+        session.close()
     yield
     jobs.shutdown()
 

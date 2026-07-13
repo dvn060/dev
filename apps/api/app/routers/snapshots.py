@@ -59,13 +59,14 @@ def update_snapshot(
         snapshot.display_name = payload.display_name
     if payload.notes is not None:
         snapshot.notes = payload.notes
-    db.flush()
+    db.commit()
     return snapshot
 
 
 @router.delete("/snapshots/{snapshot_id}", status_code=204)
 def delete_snapshot(snapshot: Snapshot = Depends(get_snapshot), db: Session = Depends(get_db)):
     db.delete(snapshot)
+    db.commit()
 
 
 @router.get("/snapshots/{snapshot_id}/devices", response_model=list[DeviceSummaryOut])
